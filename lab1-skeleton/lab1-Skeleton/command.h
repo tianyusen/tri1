@@ -3,6 +3,22 @@
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 
+
+//Implementation
+
+	//Linked list for file names
+		//Pointer type of filelist called filelist_t
+		typedef struct filelist *filelist_t;
+		//Actural structure
+		struct filelist
+		{
+			char* file;
+			filelist_t next;
+		};
+
+//End-Implementation
+
+
 /* Create a command stream from LABEL, GETBYTE, and ARG.  A reader of
    the command stream will invoke GETBYTE (ARG) to get the next byte.
    GETBYTE will return the next input byte, or a negative number
