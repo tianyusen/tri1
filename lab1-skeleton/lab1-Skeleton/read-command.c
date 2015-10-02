@@ -45,9 +45,15 @@
 
 
 
-command_stream_t
-make_command_stream (int (*get_next_byte) (void *),
-		     void *get_next_byte_argument)
+
+
+
+/* Create a command stream from LABEL, GETBYTE, and ARG.  A reader of
+   the command stream will invoke GETBYTE (ARG) to get the next byte.
+   GETBYTE will return the next input byte, or a negative number
+   (setting errno) on failure.  */
+command_stream_t 
+make_command_stream (int (*getbyte) (void *), void *arg)
 {
 
   //Implementation 
@@ -62,6 +68,17 @@ make_command_stream (int (*get_next_byte) (void *),
     //End-Configurations
 
     char* buffer = checked_malloc(buffer_size);
+
+    //load the buffer with input and do raw process:
+    //1. stripe off comments
+    //2. compress ' ' and '\t' into a single ' '
+    //the return value is the size of the content loaded.
+    //count==0 means the first read is EOF, buffer starts with NULL
+    //when the size of the buffer is not big enough, double the size.
+    //if the size exceeds the INT_MAX return -1
+
+    count = load_buffer(buffer, buffer_size, getbyte, arg)
+    if (count == -1) { perror("Input size over INT_MAX."); };
 
 
 
@@ -83,8 +100,11 @@ make_command_stream (int (*get_next_byte) (void *),
   //End-Implementation 
 }
 
-command_t
-read_command_stream (command_stream_t s)
+
+/* Read a command from STREAM; return it, or NULL on EOF.  If there is
+   an error, report the error and exit instead of returning.  */
+command_t 
+read_command_stream (command_stream_t stream)
 {
 
 
@@ -100,3 +120,4 @@ read_command_stream (command_stream_t s)
 
   //End-Implementation 
 }
+
