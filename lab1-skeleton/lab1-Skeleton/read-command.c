@@ -139,7 +139,7 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
   buffer = checked_malloc(buffer_size);
   char c;
 
-  enum prev_status
+  enum prev_status //FIXEME: may only need to be bool newline.
   {
     COMMENT, // end with a \n made from comment compression
     NEWLINE, // \n
@@ -161,12 +161,13 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
         }
         if ( c == EOF )
           goto finish;
-        if ( c == '\n')
-          prev = COMMENT;
-        if (buffer_push(buffer, &buffer_size, &content_count, c))  
+        //else c == \n
+        if (buffer_push(buffer, &buffer_size, &content_count, '\n'))  
           {
             goto finish;
           }
+          c= getbyte(arg);
+          prev = COMMENT; //we do not consider comment can satisfy special case \n\n
         break;
 
       case '\t':
@@ -175,32 +176,63 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
         {
           c = getbyte(arg);
         }
+        if (c == EOF) goto finish;
         if (buffer_push(buffer, &buffer_size, &content_count, ' '))  
           {
             goto finish;
           }
         prev = SPACE;
+        break;
+
+      case '\n':
+        if (prev == NEWLINE)
+        {
+          if (buffer_push(buffer, &buffer_size, &content_count, '\n'))  
+            {
+              goto finish;
+            }
+          prev == NEWLINE2; // will go to the next if
+        }
+
+        if (prev == NEWLINE2)
+        {
+          for(;c == '\n';)
+          {
+            c = getbyte(arg);
+          }
+          break;
+        }
+        
+        //else prev is not newline
+        if (buffer_push(buffer, &buffer_size, &content_count, '\n'))  
+          {
+            goto finish;
+          }
+          prev == NEWLINE;
+          c = getbyte(arg);
+          break;
+
+      default:
+        //common characters
         if (buffer_push(buffer, &buffer_size, &content_count, c))  
           {
             goto finish;
           }
-        break;
+          prev == NORMAL;
+          c = getbyte(arg);
+          break;
+    }//END switch
 
+  }//end for loop when c == EOF
 
-
-
-    }
-
-  }
-
-  finish: // when we read EOF in c, come here, or when the length is just too long.
-    buffer[content_count] = EOF;
-    content_count++;
+  finish: // when we read EOF in c, come here, or when the content_count+1 == MAX_INT.
+    buffer[content_count] = EOF; //it is guaranteed that buffer_size >= content_count+1 by buffer_push
+    content_count++; //implied countent_count <= buffer_size
     return buffer_size;
 }
 
 
-//return true if hit max limit -- INT_MAX
+//return true if hit max limit -- INT_MAX, used by load_buffer
 bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c) 
 {
   //Double the size of buffer when needed
