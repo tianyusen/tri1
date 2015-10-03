@@ -1,11 +1,8 @@
 // UCLA CS 111 Lab 1 command interface
-
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 
-
 //Implementation
-
 	//Linked list for file names
 		//Pointer type of filelist called filelist_t
 		typedef struct filelist *filelist_t;
@@ -15,7 +12,6 @@ typedef struct command_stream *command_stream_t;
 			char* file;
 			filelist_t next;
 		};
-
 //End-Implementation
 
 
@@ -43,7 +39,7 @@ void execute_command (command_t, int);
 int command_status (command_t);
 
 
-//new
+//new-from the reference
 /* Deallocates all allocated memory associated with a command tree  */
 void free_command (command_t cmd);
 
@@ -55,3 +51,18 @@ int is_dependent (filelist_t f1, filelist_t f2);
 
 /* Executes command_stream with time travel parallelism.  */
 int execute_time_travel (command_stream_t stream);
+
+
+//Addition In read-command.c
+
+/* FIXME: load_buffer function loads the buffer with input and do raw process:
+1. stripe off comments
+2. compress ' ' and '\t' into a single ' '
+3. initialize the buffer with some small size.
+the return value is the size of the content loaded.
+count==0 means the first read is EOF, buffer starts with NULL
+when the size of the buffer is not big enough, double the size.
+if the size exceeds the INT_MAX return INT_MAX*/
+size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg);
+
+bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c) ; //return true if hit max limit -- INT_MAX
