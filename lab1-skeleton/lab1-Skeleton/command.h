@@ -65,4 +65,6 @@ when the size of the buffer is not big enough, double the size.
 if the size exceeds the INT_MAX return INT_MAX*/
 size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg);
 
-bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c) ; //return true if hit max limit -- INT_MAX
+
+//return true if hit max limit -- INT_MAX
+bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c); 

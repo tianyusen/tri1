@@ -69,7 +69,9 @@ make_command_stream (int (*getbyte) (void *), void *arg)
 
 
 
-  /* FIXME: load_buffer function loads the buffer with input and do raw process:
+  /* FIXME: 
+    Implemented, needs testing
+    load_buffer function loads the buffer with input and do raw processing:
     1. stripe off comments
     2. compress ' ' and '\t' into a single ' '
     3. initialize the buffer with some small size.
@@ -77,9 +79,9 @@ make_command_stream (int (*getbyte) (void *), void *arg)
     count==0 means the first read is EOF, buffer starts with NULL
     when the size of the buffer is not big enough, double the size.
     if the size exceeds the INT_MAX return INT_MAX*/
-    char* buffer;
-    size_t buffer_count = load_buffer(buffer, getbyte, arg);
-    if (buffer_count == INT_MAX) { perror("Input size reaches INT_MAX, read may be incomplete"); };
+  char* buffer;
+  size_t buffer_count = load_buffer(buffer, getbyte, arg);
+  if (buffer_count == INT_MAX) { perror("Input size reaches INT_MAX, read may be incomplete"); };
 
 
 
@@ -89,16 +91,23 @@ make_command_stream (int (*getbyte) (void *), void *arg)
 
 
 
-  error (1, 0, "command reading not yet implemented");
 
-  //rid of error
-  get_next_byte;
-  get_next_byte_argument;
+  // process buffer into token stream
+  token_stream_t* head = make_token_stream(buffer, count);
+  // process token stream into command forest
+  if (head == NULL)
+  {
+    error(4, 0, "Line -1: Error in parsing.");
+    return NULL;
+  }
 
+  command_stream_t command_stream = make_command_forest(head);
 
+  // TODO: deallocate memory
+  free(buffer);
+  free_tokens(head);
 
-  return 0;
-  //End-Implementation 
+  return command_stream;
 }
 
 
@@ -130,24 +139,12 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
 
   //Rules:
   // comsume "#aaaaaaa\n" to " \n" leave out a space in the beginning
-  // "\n\n\n\n" to "\n\n"
-  // single "\n" -> ';'
   // " \t \t" to " "
 
   size_t content_count = 0;
   size_t buffer_size = 2048;
   buffer = checked_malloc(buffer_size);
   char c;
-
-  enum prev_status //FIXEME: may only need to be bool newline.
-  {
-    COMMENT, // end with a \n made from comment compression
-    NEWLINE, // \n
-    NEWLINE2, // \n\n or more
-    SPACE, // ' ' or '\t'
-    NORMAL // things that are not white spaces
-  };
-  enum prev_status prev = NORMAL;
 
 
   for(c=getbyte(arg); c != EOF;)
@@ -156,9 +153,9 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
     {
       case '#': //comsume "#aaaaaaa\n" to "\n"
         for(;c != EOF && c != '\n';)
-        {
-          c = getbyte(arg);
-        }
+          {
+            c = getbyte(arg);
+          }
         if ( c == EOF )
           goto finish;
         //else c == \n
@@ -166,59 +163,28 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
           {
             goto finish;
           }
-          c= getbyte(arg);
-          prev = COMMENT; //we do not consider comment can satisfy special case \n\n
+          c= getbyte(arg);    
         break;
 
       case '\t':
       case ' ':
         for(;c == '\t' || c == ' ';)
-        {
-          c = getbyte(arg);
-        }
+          {
+            c = getbyte(arg);
+          }
         if (c == EOF) goto finish;
         if (buffer_push(buffer, &buffer_size, &content_count, ' '))  
           {
             goto finish;
-          }
-        prev = SPACE;
+          }  
         break;
-
-      case '\n':
-        if (prev == NEWLINE)
-        {
-          if (buffer_push(buffer, &buffer_size, &content_count, '\n'))  
-            {
-              goto finish;
-            }
-          prev == NEWLINE2; // will go to the next if
-        }
-
-        if (prev == NEWLINE2)
-        {
-          for(;c == '\n';)
-          {
-            c = getbyte(arg);
-          }
-          break;
-        }
-        
-        //else prev is not newline
-        if (buffer_push(buffer, &buffer_size, &content_count, '\n'))  
-          {
-            goto finish;
-          }
-          prev == NEWLINE;
-          c = getbyte(arg);
-          break;
 
       default:
         //common characters
         if (buffer_push(buffer, &buffer_size, &content_count, c))  
           {
             goto finish;
-          }
-          prev == NORMAL;
+          }    
           c = getbyte(arg);
           break;
     }//END switch
@@ -243,9 +209,12 @@ bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, c
   }
   if(*content_count  +1 == *buffer_size)
   {
-    size_t temp = *buffer_size;
-    if ( temp > *buffer_size = *buffer_size * 2)
-      perror("Buffer size overflow");
+    if(*buffer_size > MAX_INT/2)
+    {
+        perror("Buffer size overflow");
+        abort();
+    }
+    *buffer_size = *buffer_size * 2;
     *buffer = checked_grow_alloc(buffer,buffer_size);
   }
 
