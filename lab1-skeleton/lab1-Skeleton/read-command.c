@@ -100,14 +100,21 @@ read_command_stream (command_stream_t stream)
 
 size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
 {
+/*  TO YeTian:
+
   TEST: dump the buffer for every case, to see if the function is okay.
   cases: 
     "asd hd2938hcnch334 348f 829mf 28439f " should not change
     "138e9    12e98   812e     " should "138e9 12e98 812e "
     "1e2 \n \n  \n \t 1d" should "1e2 \n \n \n 1d"
     "    dn     " should " dn "
+    "#asdbasjdhkas   \n   \n \n asd" -> "\n \n \n asd"
 
-
+  The above are short cases, you can make longer ones,
+  MOST IMPORTANTLY: check if each case end with EOF,
+  check if the buffer_push saves space for EOF to be inserted (including corner cases: buffer_size reaches INT_MAX, and the case where buffer_size -1 == countent_count)
+  you can check INT_MAX case by replacing INT_MAX in the implementation with some small number
+  ALSO: check if there are buffer overflow in corner cases*/
 
 
   //Rules:
@@ -174,6 +181,11 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
 //return true if hit max limit -- INT_MAX, used by load_buffer
 bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c) 
 {
+/*  TO YeTian:
+  Check this if buffer overflow is reported correctly, if the load_buffer() passes all cases, this is the only thing left to check for this one.
+
+  BY THE WAY, write deallocate functions for buffer if you got time */
+
   //Double the size of buffer when needed
   //Always leave a empty slot for goto finish
   if (*content_count  +1 == INT_MAX)
@@ -210,21 +222,55 @@ command_stream_t parse(char* buffer)
 {
   // Have a string available to store items
   int line = 1;
-  char* reading
-  size_t reading_size = 256;
-  size_t reading_count = 0;
 
   command_stream_t head = NULL;
+
   for(int i = 0; buffer[i] != EOF; i++)
   {
-    for (;isword(buffer[i]);i++)
+    if(is_word(buffer[i])
     {
-      if (buffer_push(reading, &reading_size, &reading_count, buffer[i]))  
-        {
-          perror("Line %d: Parsing error, simple command with size almost MAX_INT")
-        }
+
+      command_t current_command = build_command(SIMPLE_COMMAND, line); //TODO(y)
+      push_command_stream(head, current_command);//TODO(y)
+
+      char* reading
+      size_t reading_size = 256;
+      size_t reading_count = 0;
+
+      current_command->u.word = &reading; //TODO(y) to check syntax
+
+      nextword:
+      for (;isword(buffer[i]);i++)
+      {
+        if (buffer_push(reading, &reading_size, &reading_count, buffer[i]))  
+          {
+            perror("Line %d: Parsing error, simple command with size almost MAX_INT")
+          }
+      }
+      if (buffer[i] == EOF) goto word_EOF;
+      if (buffer[i] == '<') goto word_IN;
+      if (buffer[i] == '>') goto word_OUT;
+      if (buffer[i] == ' ')
+      {
+        if(is_word(buffer[i+1])
+          {
+            goto nextword;
+          }
+        if (buffer[i] == '<') 
+          {
+            word_IN://WORKING HERE --TIAN
+            current_command->input = inword;
+          }
+        if (buffer[i] == '>') 
+          {
+            word_OUT:
+            current_command->output = outword;
+          }
+      } 
+
+      //else the simple command runs out of words, buffer[i+1] is not a word
     }
-    if (buffer[i] == ' ' && buffer[i+1] == )
+
   }
 
 
