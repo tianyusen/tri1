@@ -188,16 +188,17 @@ bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, c
 
   //Double the size of buffer when needed
   //Always leave a empty slot for goto finish
-  if (*content_count  +1 == INT_MAX)
+  if (*content_count  +1 >= INT_MAX)
   {
-    retrun true;
+    return true;
   }
   if(*content_count  +1 == *buffer_size)
   {
     if(*buffer_size > MAX_INT/2)
     {
-        perror("Buffer size overflow");
-        abort();
+        //perror("Buffer size overflow");
+        //abort();
+        return true;
     }
     *buffer_size = *buffer_size * 2;
     *buffer = checked_grow_alloc(buffer,buffer_size);
@@ -218,59 +219,113 @@ bool is_word (char c)
 }
 
 
-command_stream_t parse(char* buffer)
+
+command_stream_t parse(char* buffer, int* line_number)
 {
   // Have a string available to store items
-  int line = 1;
+  int* line = line_number;
+  command_stream_t top = NULL;
+  command_stream_t result = NULL;
+  int prev_newline = 2; 
+  operator_node_t op_top = NULL;
 
-  command_stream_t head = NULL;
 
-  for(int i = 0; buffer[i] != EOF; i++)
+  for(int i = 0; buffer[i] != EOF; i++, *line++) //each loop is a newline
   {
-    if(is_word(buffer[i])
+    if(buffer[i] == '\n' )
     {
+      switch (prev_newline)
+      {
+        case 0: //the first \n after a command
+          prev_newline++; 
+          continue;
 
+        case 1://a \n following 1 \n
+          if (top->prev != NULL)
+          {
+            perror("%d: Parsing Error, unfinished command tree.");
+          }
+          push_command_stream(result, pop_commmand_stream(top));
+          prev_newline++;
+          continue;
+
+        case 2:
+          continue;
+    }
+    else// not a \n
+    {
+      prev_newline = 0;
+    }
+    if(is_word(buffer[i])//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
+    {
       command_t current_command = build_command(SIMPLE_COMMAND, line); //TODO(y)
-      push_command_stream(head, current_command);//TODO(y)
-
-      char* reading
-      size_t reading_size = 256;
-      size_t reading_count = 0;
-
-      current_command->u.word = &reading; //TODO(y) to check syntax
 
       nextword:
-      for (;isword(buffer[i]);i++)
+  
+      char* new_word = read_word(buffer,&i); // TODO read in a word and allocate space for it and return a pointer to that space, end with EOF, modify i so that it points to the first character not in the word.
+      push_word(new_word, current_command) //TODO, simply append new_word in the current_command's structure
+      
+      //Now buffer[i] points to something not is_word()
+
+      // for (;isword(buffer[i]);i++)
+      // {
+      //   if (buffer_push(reading, &reading_size, &reading_count, buffer[i]))  
+      //     {
+      //       perror(":%d: Parsing error, simple command with size almost MAX_INT",line);
+      //     }
+      // }
+      switch (buffer[i])
       {
-        if (buffer_push(reading, &reading_size, &reading_count, buffer[i]))  
-          {
-            perror("Line %d: Parsing error, simple command with size almost MAX_INT")
-          }
+        case '<': goto word_IN; break;
+        case '>': goto word_OUT; break;
+        case ' ':
+          if(is_word(buffer[i+1])
+            {
+              i++;
+              goto nextword;
+            }
+          if (buffer[i+1] == '<') 
+            { 
+              i++;
+              word_IN:
+              if(buffer[i+1] == ' ' && is_word(buffer[i+2]))
+                { i++; } 
+              if(is_word(buffer[i+1]))
+                { i++; } 
+              else
+                {
+                  perror("%d: Parsing Error, invalid input file name");
+                } 
+              char* inword = read_word(buffer,&i);
+              set_input(current_command,inword);
+            }
+          if (buffer[i+1] == '>') 
+            {
+              i++ //move to '>'
+              word_OUT:
+              if(buffer[i+1] == ' ' && is_word(buffer[i+2]))
+                { i++; } //consume one white space after '<'
+              if(is_word(buffer[i+1]))
+                { i++; } //move to the start of next word
+              else// no word detected, either after a white space or immediately after '>' 
+                {
+                  perror("%d: Parsing Error, invalid output file name");
+                } 
+              char* outword = read_word(buffer,&i);
+              set_output(current_command,outword);
+            }
+          case EOF:
       }
-      if (buffer[i] == EOF) goto word_EOF;
-      if (buffer[i] == '<') goto word_IN;
-      if (buffer[i] == '>') goto word_OUT;
-      if (buffer[i] == ' ')
-      {
-        if(is_word(buffer[i+1])
-          {
-            goto nextword;
-          }
-        if (buffer[i] == '<') 
-          {
-            word_IN://WORKING HERE --TIAN
-            current_command->input = inword;
-          }
-        if (buffer[i] == '>') 
-          {
-            word_OUT:
-            current_command->output = outword;
-          }
-      } 
-
-      //else the simple command runs out of words, buffer[i+1] is not a word
+      push_command_stream(top, current_command);//TODO(y) move top to pointing to current_command, and link up the last command
     }
-
+    else if(buffer[i]=='(')
+    {
+      push_operator(op_top, LPAR_OP);
+    }
+    else if(buffer[i]==')')
+    {
+      
+    }
   }
 
 

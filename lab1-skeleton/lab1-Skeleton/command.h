@@ -1,7 +1,7 @@
 // UCLA CS 111 Lab 1 command interface
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
-
+typedef struct operator_node *operator_node_t;
 
 //Implementation
 	//Linked list for file names
@@ -20,7 +20,24 @@ typedef struct command_stream *command_stream_t;
 	      //FIXME: filelist_t is set to NULL at all time for 1A
 	      filelist_t dependency;   // the files that has dependency for this command object
 	      command_stream_t next;
+	      command_stream_t prev;
 	    };
+	//operator stack for parse()    
+	enum operator_type
+	{
+	    AND_OP,         // A && B
+	    SEQUENCE_OP,    // A ; B
+	    OR_OP,          // A || B
+	    PIPE_OP,        // A | B
+	    LPAR_OP,      // (
+	    RPAR_OP,    // ) 
+	}
+	struct operator_node 
+	{
+	  operator_node_t next;
+	  operator_node_t prev;
+	  operator_type content;
+	};
 
 //End-Implementation
 
