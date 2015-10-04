@@ -100,6 +100,15 @@ read_command_stream (command_stream_t stream)
 
 size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
 {
+  TEST: dump the buffer for every case, to see if the function is okay.
+  cases: 
+    "asd hd2938hcnch334 348f 829mf 28439f " should not change
+    "138e9    12e98   812e     " should "138e9 12e98 812e "
+    "1e2 \n \n  \n \t 1d" should "1e2 \n \n \n 1d"
+    "    dn     " should " dn "
+
+
+
 
   //Rules:
   // comsume "#aaaaaaa\n" to " \n" leave out a space in the beginning
