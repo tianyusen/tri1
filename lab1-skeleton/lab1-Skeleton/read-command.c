@@ -30,20 +30,8 @@
 //End-Implementation
 
 
-/* FIXME: Define the type 'struct command_stream' here.  This should
-   complete the incomplete type declaration in command.h.  */
-//Implementation
 
-  //Linked list for command object
-    //Actural structure
-    struct command_stream
-    {
-      command_t m_command;
-      //FIXME: filelist_t is set to NULL at all time for 1A
-      filelist_t dependency;   // the files that has dependency for this command object
-      command_stream_t next;
-    };
-//End-Implementation
+
 
 
 /* Create a command stream from LABEL, GETBYTE, and ARG.  A reader of
@@ -58,15 +46,6 @@ make_command_stream (int (*getbyte) (void *), void *arg)
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
- 
-
-    //Configurations and Initializations
-
-
-    //End-Configurations
-
-
-
 
 
   /* FIXME: 
@@ -81,27 +60,12 @@ make_command_stream (int (*getbyte) (void *), void *arg)
     if the size exceeds the INT_MAX return INT_MAX*/
   char* buffer;
   size_t buffer_count = load_buffer(buffer, getbyte, arg);
-  if (buffer_count == INT_MAX) { perror("Input size reaches INT_MAX, read may be incomplete"); };
+  if (buffer_count == buffer_size && buffer_size > INT_MAX/2) { perror("Input size too large, read may be incomplete"); };
 
 
-
-
-
-
-
-
-
-
-  // process buffer into token stream
-  token_stream_t* head = make_token_stream(buffer, count);
-  // process token stream into command forest
-  if (head == NULL)
-  {
-    error(4, 0, "Line -1: Error in parsing.");
-    return NULL;
-  }
-
-  command_stream_t command_stream = make_command_forest(head);
+  // process buffer
+  command_stream_t command_stream = parse(buffer);
+  // FIXME: check error
 
   // TODO: deallocate memory
   free(buffer);
@@ -224,3 +188,62 @@ bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, c
   *buffer_count++;
   return false;
 }
+
+bool is_word (char c)
+{
+  if (isalnum(c) || strchr("!%+,-./:@^_", c) != NULL)
+    return true;
+  return false;
+}
+
+
+command_stream_t parse(char* buffer)
+{
+  // Have a string available to store items
+  int line = 1;
+  char* reading
+  size_t reading_size = 256;
+  size_t reading_count = 0;
+
+  command_stream_t head = NULL;
+  for(int i = 0; buffer[i] != EOF; i++)
+  {
+    for (;isword(buffer[i]);i++)
+    {
+      if (buffer_push(reading, &reading_size, &reading_count, buffer[i]))  
+        {
+          perror("Line %d: Parsing error, simple command with size almost MAX_INT")
+        }
+    }
+    if (buffer[i] == ' ' && buffer[i+1] == )
+  }
+
+
+
+
+  For each item in the infix (with parens) expression
+    If the item is a number then add it to the string with a space
+    if the item is an operator then
+      While the stack is not empty and an operator is at the top and the operator at the top is higher priority that the item then
+        = Pop the operator on the top of the stack
+
+        = Add the popped operator to the string with a space
+
+      Push the item on the stack
+    else if the item is a left paren
+      Push the item on the stack
+    else if the item is a right paren
+      Pop a thing off of the stack.
+      while that thing is not a left paren
+        = Add the thing to the string with a space
+
+        = Pop a thing off of the stack
+
+  While the stack is not empty
+    Pop a thing off the stack.
+    Add it to the string with a space.
+  Remove the last character (a space) from the string  
+}
+
+
+

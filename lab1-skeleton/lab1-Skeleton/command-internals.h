@@ -22,6 +22,8 @@ struct command
   char *input;
   char *output;
 
+  int line //record starting line number
+
   union
   {
     // for AND_COMMAND, SEQUENCE_COMMAND, OR_COMMAND, PIPE_COMMAND:

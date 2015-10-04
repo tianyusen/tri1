@@ -2,6 +2,7 @@
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 
+
 //Implementation
 	//Linked list for file names
 		//Pointer type of filelist called filelist_t
@@ -12,7 +13,17 @@ typedef struct command_stream *command_stream_t;
 			char* file;
 			filelist_t next;
 		};
+  //Linked list for command object
+	    struct command_stream
+	    {
+	      command_t m_command;
+	      //FIXME: filelist_t is set to NULL at all time for 1A
+	      filelist_t dependency;   // the files that has dependency for this command object
+	      command_stream_t next;
+	    };
+
 //End-Implementation
+
 
 
 /* Create a command stream from LABEL, GETBYTE, and ARG.  A reader of
