@@ -1,4 +1,7 @@
 // UCLA CS 111 Lab 1 command interface
+#include <stdbool.h>
+#include <stdio.h>
+
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 typedef struct operator_node *operator_node_t;
@@ -31,12 +34,12 @@ typedef struct operator_node *operator_node_t;
 	    PIPE_OP,        // A | B
 	    LPAR_OP,      // (
 	    RPAR_OP,    // ) 
-	}
+    };
 	struct operator_node 
 	{
 	  operator_node_t next;
 	  operator_node_t prev;
-	  operator_type content;
+	  enum operator_type content;
 	};
 
 //End-Implementation
@@ -95,4 +98,7 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg);
 
 
 //return true if hit max limit -- INT_MAX
-bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c); 
+bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c);
+
+
+command_stream_t parse(char* buffer, int* line_number);
