@@ -232,8 +232,17 @@ command_stream_t parse(char* buffer, int* line_number)
 
   for(int i = 0; buffer[i] != EOF; i++, *line++) //each loop is a newline
   {
+    if(buffer[i] == ' ')//EXPERIMENTAL:consume space
+    {
+      i++;
+    }
+
     if(buffer[i] == '\n' )
     {
+      if(i>0 && (buffer[i-1] == '<' || buffer[i-1]) )
+      {
+        perror("%d: Parsing Error, in violation of (Newlines may follow any special token other than < and >)");
+      }
       switch (prev_newline)
       {
         case 0: //the first \n after a command
@@ -245,20 +254,22 @@ command_stream_t parse(char* buffer, int* line_number)
           {
             perror("%d: Parsing Error, unfinished command tree.");
           }
-          push_command_stream(result, pop_commmand_stream(top));
+          push_command_stream(result, pop_command_stream(top));//TODO pop should return command_t, free the command_stream object, save the command object in it
           prev_newline++;
           continue;
 
         case 2:
           continue;
     }
-    else// not a \n
-    {
-      prev_newline = 0;
-    }
+    //else// not a \n which is implied since all case 0,1,2 have continue to intercept, 
+    //{
+      //prev_newline = 0;// this should be done by the end of the loop, but not in the for(;;"here"), since continue should not proc it.
+    //}
     if(is_word(buffer[i])//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
     {
-      command_t current_command = build_command(SIMPLE_COMMAND, line); //TODO(y)
+      if(prev_newline == 1){buffer[i] = ';'; goto colon;}
+
+      command_t current_command = build_command(SIMPLE_COMMAND, line); //TODO(y) return a empty command that is properly initialized.
 
       nextword:
   
@@ -320,12 +331,60 @@ command_stream_t parse(char* buffer, int* line_number)
     }
     else if(buffer[i]=='(')
     {
-      push_operator(op_top, LPAR_OP);
+      push_operator(op_top, LPAR_OP);//TODO
     }
     else if(buffer[i]==')')
     {
-      
+      command_t current_command = build_command(SUBSHELL_COMMAND, line);
+      if (top->prev != NULL)
+      {
+        perror("%d: Parsing Error, unfinished command tree.");
+      }
+      current_command->u.subshell_command = pop_command_stream(top);
+      push_command_stream(top,current_command);
+      if(pop_operator(op_top)->type!= LPAR_OP)//TODO this function need to free the operator_node object, which is different from pop_command_stream
+      {
+        perror("%d: Parsing Error, unparied parenthesis.");
+      }
     }
+    else if(prev_newline > 0)
+    {
+      perror("%d: Parsing Error, in violation of (the only tokens that newlines can appear before are (, ), and the ﬁrst words of simple commands)")
+    }
+    else if(is_op(buffer[i]))//TODO, evaluate buffer[i] first to avoid buffer[i+1] cause segmentation fault
+    {//prev_newline == 0, and this one is not a word, a (, or a ), then this must be a operator other than ( and ).
+      colon://buffer[i] == ';' by conversion from \n
+      operator_node* current_op = build_operator(buffer, &i); //TODO, return a pointer
+      if(is_empty_op(op_top))
+      {
+        push_operator(op_top, current_op->type);
+      }
+      else
+      {
+        if (precedence(current_op)>precedence(top_operator(op_top)) //TODO precedence just return a corresponding int for different ops, top_operator just peek the top element of the op_stack.
+        {
+          push_operator(op_top, current_op->type);
+        }
+        else
+        {
+          while(top_operator(op_top)->type != LPAR_OP && precedence(current_op) <= precedence(top_operator(op_top))
+          {
+            operator_type op_cb = pop_operator(op_top)->type;  //cb is short for combine
+            command_t second_conmmand = pop_command_stream(top);
+            command_t first_conmmand = pop_command_stream(top);
+            command_t command_cb = combine_command(first_conmmand, second_conmmand, op_cb);
+              // TODO generate a new command based on two command and a connecting op, line number take the first command's 
+            push_command_stream(top, command_cb);
+
+
+          }
+        }
+      } 
+
+    }
+
+
+    prev_newline = 0;
   }
 
 
