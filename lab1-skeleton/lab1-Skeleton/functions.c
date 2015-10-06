@@ -37,6 +37,9 @@ char* read_word(char* buffer, int *i);
 command_t build_command(enum command_type type, int* line);
 command_t pop_command_stream(command_stream_t stream);
 void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command);
+void push_command_stream(command_stream_t* top, command_t current_command);
+void set_input(command_t current_command, char* inword);
+void set_output(command_t current_command, char* outword);
 
 char* read_word(char* buffer, int *i){
     size_t buffer_size = 2048;
@@ -128,3 +131,27 @@ void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t cur
     free(new_word);
     
 }
+
+void push_command_stream(command_stream_t* top, command_t current_command){
+    command_stream_t new_stream;
+    new_stream->m_command = current_command;
+    new_stream->prev = NULL;
+    new_stream->next = *top;
+    new_stream->next->prev = new_stream;
+    *top = new_stream;
+}
+
+void set_input(command_t current_command, char* inword){
+    char* copy = checked_malloc(strlen(inword)+1);
+    strcpy(copy, inword);
+    current_command->input = copy;
+    free(inword);
+}
+
+void set_output(command_t current_command, char* outword){
+    char* copy = checked_malloc(strlen(outword)+1);
+    strcpy(copy, outword);
+    current_command->output = copy;
+    free(outword);
+}
+
