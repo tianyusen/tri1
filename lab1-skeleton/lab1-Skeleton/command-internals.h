@@ -10,6 +10,12 @@ enum command_type
     SUBSHELL_COMMAND,    // ( A )
   };
 
+struct word_list{
+    char* word;
+    struct word_list* prev;
+    struct word_list* next;
+};
+
 // Data associated with a command.
 struct command
 {
@@ -21,6 +27,8 @@ struct command
   // I/O redirections, or 0 if none.
   char *input;
   char *output;
+
+    int line; //record starting line number
 
   union
   {

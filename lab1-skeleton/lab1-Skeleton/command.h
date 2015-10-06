@@ -1,11 +1,12 @@
 // UCLA CS 111 Lab 1 command interface
+#include <stdbool.h>
+#include <stdio.h>
 
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
-
+typedef struct operator_node *operator_node_t;
 
 //Implementation
-
 	//Linked list for file names
 		//Pointer type of filelist called filelist_t
 		typedef struct filelist *filelist_t;
@@ -15,8 +16,34 @@ typedef struct command_stream *command_stream_t;
 			char* file;
 			filelist_t next;
 		};
+  //Linked list for command object
+	    struct command_stream
+	    {
+	      command_t m_command;
+	      //FIXME: filelist_t is set to NULL at all time for 1A
+	      filelist_t dependency;   // the files that has dependency for this command object
+	      command_stream_t next;
+	      command_stream_t prev;
+	    };
+	//operator stack for parse()    
+	enum operator_type
+	{
+	    AND_OP,         // A && B
+	    SEQUENCE_OP,    // A ; B
+	    OR_OP,          // A || B
+	    PIPE_OP,        // A | B
+	    LPAR_OP,      // (
+	    RPAR_OP,    // ) 
+    };
+	struct operator_node 
+	{
+	  operator_node_t next;
+	  operator_node_t prev;
+	  enum operator_type content;
+	};
 
 //End-Implementation
+
 
 
 /* Create a command stream from LABEL, GETBYTE, and ARG.  A reader of
@@ -24,10 +51,12 @@ typedef struct command_stream *command_stream_t;
    GETBYTE will return the next input byte, or a negative number
    (setting errno) on failure.  */
 command_stream_t make_command_stream (int (*getbyte) (void *), void *arg);
+//Implement in read-command
 
 /* Read a command from STREAM; return it, or NULL on EOF.  If there is
    an error, report the error and exit instead of returning.  */
 command_t read_command_stream (command_stream_t stream);
+//implement in read-command
 
 /* Print a command to stdout, for debugging.  */
 void print_command (command_t);
@@ -41,7 +70,7 @@ void execute_command (command_t, int);
 int command_status (command_t);
 
 
-//new
+//new-from the reference
 /* Deallocates all allocated memory associated with a command tree  */
 void free_command (command_t cmd);
 
@@ -53,3 +82,23 @@ int is_dependent (filelist_t f1, filelist_t f2);
 
 /* Executes command_stream with time travel parallelism.  */
 int execute_time_travel (command_stream_t stream);
+
+
+//Addition In read-command.c
+
+/* FIXME: load_buffer function loads the buffer with input and do raw process:
+1. stripe off comments
+2. compress ' ' and '\t' into a single ' '
+3. initialize the buffer with some small size.
+the return value is the size of the content loaded.
+count==0 means the first read is EOF, buffer starts with NULL
+when the size of the buffer is not big enough, double the size.
+if the size exceeds the INT_MAX return INT_MAX*/
+size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg);
+
+
+//return true if hit max limit -- INT_MAX
+bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c);
+
+
+command_stream_t parse(char* buffer, int* line_number);
