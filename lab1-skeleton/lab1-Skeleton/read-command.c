@@ -231,12 +231,23 @@ command_stream_t parse(char* buffer, int* line_number)
   command_stream_t result = NULL;
   int prev_newline = 2; 
   operator_node_t op_top = NULL;
+  command_t current_command = NULL;
 
 
-  for(int i = 0; buffer[i] != EOF; i++, *line++) //each loop is a newline
+  for(int i = 0; buffer[i] != EOF; i++) //each loop is a newline
   {
+    if(buffer[i] == ' ')//EXPERIMENTAL:consume space
+    {
+      continue;
+    }
+
     if(buffer[i] == '\n' )
     {
+      (*line)++;
+      if(i>0 && (buffer[i-1] == '<' || buffer[i-1]) )
+      {
+        perror("%d: Parsing Error, in violation of (Newlines may follow any special token other than < and >)");
+      }
       switch (prev_newline)
       {
         case 0: //the first \n after a command
@@ -248,7 +259,7 @@ command_stream_t parse(char* buffer, int* line_number)
           {
             perror("%d: Parsing Error, unfinished command tree.");
           }
-          push_command_stream(result, pop_commmand_stream(top));
+          push_command_stream(result, pop_command_stream(top,line));//TODO pop should return command_t, free the command_stream object, save the command object in it
           prev_newline++;
           continue;
 
@@ -256,21 +267,22 @@ command_stream_t parse(char* buffer, int* line_number)
           continue;
       }
     }
-    else // not a \n
-    {prev_newline = 0;}
-        
-    if(is_word(buffer[i]))//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
+    //else// not a \n which is implied since all case 0,1,2 have continue to intercept, 
+    //{
+      //prev_newline = 0;// this should be done by the end of the loop, but not in the for(;;"here"), since continue should not proc it.
+    //}
+    if(is_word(buffer[i])//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
     {
+      if(prev_newline == 1){buffer[i] = ';'; goto colon;}
       int count_word = 0;
       size_t buffer_size = 2*sizeof(char*);
-        
-      command_t current_command = build_command(SIMPLE_COMMAND, line); //TODO(y)
 
+      current_command = build_command(SIMPLE_COMMAND, line); //TODO(y) return a empty command that is properly initialized.
+      //int word_count = 0;
       nextword:
-  
+      //INTERFACE:   
       char* new_word = read_word(buffer,&i); // TODO read in a word and allocate space for it and return a pointer to that space, end with EOF, modify i so that it points to the first character not in the word.
       push_word(new_word, count_word, buffer_size, current_command) //TODO, simply append new_word in the current_command's structure
-      
       //Now buffer[i] points to something not is_word()
 
       // for (;isword(buffer[i]);i++)
@@ -280,6 +292,7 @@ command_stream_t parse(char* buffer, int* line_number)
       //       perror(":%d: Parsing error, simple command with size almost MAX_INT",line);
       //     }
       // }
+      inout://THIS part actually is better off being a independent function
       switch (buffer[i])
       {
         case '<': goto word_IN; break;
@@ -303,7 +316,7 @@ command_stream_t parse(char* buffer, int* line_number)
                   perror("%d: Parsing Error, invalid input file name");
                 } 
               char* inword = read_word(buffer,&i);
-              set_input(current_command,inword);
+              set_input(current_command,inword);//TODO
             }
           if (buffer[i+1] == '>') 
             {
@@ -318,26 +331,114 @@ command_stream_t parse(char* buffer, int* line_number)
                   perror("%d: Parsing Error, invalid output file name");
                 } 
               char* outword = read_word(buffer,&i);
-              set_output(current_command,outword);
+              set_output(current_command,outword);//TODO
             }
-          case EOF:
+          case EOF: goto pares_EOF;
       }
       push_command_stream(top, current_command);//TODO(y) move top to pointing to current_command, and link up the last command
     }
     else if(buffer[i]=='(')
     {
-      push_operator(op_top, LPAR_OP);
+      push_operator(op_top, LPAR_OP);//TODO
     }
+
+    // else if the item is a right paren
+    //   Pop a thing off of the stack.
+    //   while that thing is not a left paren
+    //     = Add the thing to the string with a space
+
+    //     = Pop a thing off of the stack
+
     else if(buffer[i]==')')
     {
-      
+      if(is_empty_op()){ perror("%d: Parsing Error, unparied right parenthesis");}
+      operator_type last_op =  pop_operator(op_top);
+      while(last_op != LPAR_OP)
+      {
+        command_t second_conmmand = pop_command_stream(top,line);//TODO pop a command object off top, and return command_t, report error on line (line) if trying to pop empty steam
+        command_t first_conmmand = pop_command_stream(top,line);
+        command_t command_cb = combine_command(first_conmmand, second_conmmand, last_op);
+          // TODO generate a new command based on two command and a connecting op, line number take the first command's 
+        push_command_stream(top, command_cb);
+        last_op =  pop_operator(op_top);
+        if(is_empty_op()){ perror("%d: Parsing Error, unparied right parenthesis");}
+      }
+      current_command = build_command(SUBSHELL_COMMAND, line);
+
+      current_command->u.subshell_command = pop_command_stream(top,line);
+      //push_command_stream(top,current_command); this shall be done in the goto, which is at the last part of simple command ^^^
+      i++;
+      if(buffer[i]==EOF){goto pares_EOF}
+      goto inout:
     }
+    else if(prev_newline > 0)
+    {
+      perror("%d: Parsing Error, in violation of (the only tokens that newlines can appear before are (, ), and the ﬁrst words of simple commands)")
+    }
+    else if(is_op(buffer[i]))//TODO, evaluate buffer[i] first to avoid buffer[i+1] cause segmentation fault
+    {//prev_newline == 0, and this one is not a word, a (, or a ), then this must be a operator other than ( and ).
+      colon://buffer[i] == ';' by conversion from \n
+      operator_node* current_op = build_operator(buffer, &i); //TODO, return a pointer
+      if(is_empty_op(op_top))
+      {
+        push_operator(op_top, current_op->type);
+      }
+      else
+      {
+        if (precedence(current_op)>precedence(top_operator(op_top)) //TODO precedence just return a corresponding int for different ops, top_operator just peek the top element of the op_stack.
+        {
+          push_operator(op_top, current_op->type);
+        }
+        else
+        {
+          while(top_operator(op_top)->type != LPAR_OP && precedence(current_op) <= precedence(top_operator(op_top))
+          {
+            operator_type op_cb = pop_operator(op_top)->type;  //cb is short for combine
+            command_t second_conmmand = pop_command_stream(top,line);
+            command_t first_conmmand = pop_command_stream(top,line);
+            command_t command_cb = combine_command(first_conmmand, second_conmmand, op_cb);
+              // TODO generate a new command based on two command and a connecting op, line number take the first command's 
+            push_command_stream(top, command_cb);
+            if is_empty_op(op_top)
+            {
+              break;
+            }
+          }
+          push_operator(op_top, current_op);
+        }
+      } 
+
+    }
+    else// not a legit character
+    {
+      perror("%d: Parsing Error, non-standard character.");
+    }
+    prev_newline = 0;
+    if(false)//EMERGENCY EXIT buffer[i] == EOF
+      {
+        pares_EOF:
+        i--;
+      }
+  }
+
+  while(!is_empty_op(op_top))
+  {
+    operator_type op_cb = pop_operator(op_top)->type;  //cb is short for combine
+    if( op_cb ==  LPAR_OP ||    
+        op_cb ==  RPAR_OP) 
+        {
+          (*line)--;//EXPERIMENTAL to adjust this line numer to fit vvv
+          perror("%d: Parsing Error, unpaired parenthesis by the EOF") //TOCHECK line number should be the line of EOF 
+        } 
+    command_t second_conmmand = pop_command_stream(top,line);
+    command_t first_conmmand = pop_command_stream(top,line);
+    command_t command_cb = combine_command(first_conmmand, second_conmmand, op_cb);
+      // TODO generate a new command based on two command and a connecting op, line number take the first command's 
+    push_command_stream(top, command_cb);
   }
 
 
-/*
-
-  For each item in the infix (with parens) expression
+/*  For each item in the infix (with parens) expression
     If the item is a number then add it to the string with a space
     if the item is an operator then
       While the stack is not empty and an operator is at the top and the operator at the top is higher priority that the item then
@@ -358,8 +459,10 @@ command_stream_t parse(char* buffer, int* line_number)
   While the stack is not empty
     Pop a thing off the stack.
     Add it to the string with a space.
-  Remove the last character (a space) from the string  
- */
+  Remove the last character (a space) from the string  */
+
+  free_op(op_top) = NULL;
+  return top;
 }
 
 
