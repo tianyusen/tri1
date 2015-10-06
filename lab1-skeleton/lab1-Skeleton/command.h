@@ -102,3 +102,20 @@ bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, c
 
 
 command_stream_t parse(char* buffer, int* line_number);
+
+
+//Small functions
+char* read_word(char* buffer, int *i);
+command_t build_command(enum command_type type, int* line);
+command_t pop_command_stream(command_stream_t stream);
+void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command);
+
+
+void push_command_stream(command_stream_t, command_t command);
+void set_input(command_t current_command, char* inword);
+void set_output(command_t current_command, char* outword);
+void push_operator(operator_node_t op_stack_top, enum operator_type type);
+bool is_empty_op(operator_node_t top);
+enum operator_type pop_operator(operator_node_t op_top);
+command_t combine_command(command_t first_conmmand, command_t second_conmmand, enum operator_type last_op);
+bool is_op(char c); // DO THIS EASY and BASIC ONE FIRST
