@@ -223,7 +223,7 @@ command_stream_t parse(char* buffer, int* line_number)
   int prev_newline = 2; 
   operator_node_t op_top = NULL;
   command_t current_command = NULL;
-
+  bool last_space_to_colon = false;
 
   for(int i = 0; buffer[i] != EOF; i++) //each loop is a newline
   {
@@ -259,7 +259,7 @@ command_stream_t parse(char* buffer, int* line_number)
     //}
     if(is_word(buffer[i]))//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
     {
-      if (prev_newline == 1){ buffer[i] = ';'; goto colon; }
+	  if (prev_newline == 1){ buffer[i] = ';'; last_space_to_colon = true; goto colon; }
 	  int count_word = 0;
       size_t buffer_size = 2*sizeof(char*);
 
@@ -392,7 +392,14 @@ command_stream_t parse(char* buffer, int* line_number)
           }
           push_operator(&op_top, top_operator(current_op));
         }
-      } 
+      }
+	  if (!last_space_to_colon)
+	  {
+		  while (buffer[i + 1] == '\n' || buffer[i + 1] == ' ')
+		  {
+			  i++;
+		  }
+	  }
 
     }
     else// not a legit character
