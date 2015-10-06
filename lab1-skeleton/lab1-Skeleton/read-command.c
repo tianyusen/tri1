@@ -52,7 +52,7 @@ make_command_stream (int (*getbyte) (void *), void *arg)
     count==0 means the first read is EOF, buffer starts with NULL
     when the size of the buffer is not big enough, double the size.
     if the size exceeds the INT_MAX return INT_MAX*/
-  char* buffer;
+	char* buffer = NULL;
   int lineN = 0;
   size_t buffer_count = load_buffer(buffer, getbyte, arg);
   //if (buffer_count == buffer_size && buffer_size > INT_MAX/2) { perror("Input size too large, read may be incomplete"); };
@@ -366,34 +366,34 @@ command_stream_t parse(char* buffer, int* line_number)
     }
     else if(is_op(buffer[i]))//TODO, evaluate buffer[i] first to avoid buffer[i+1] cause segmentation fault
     {//prev_newline == 0, and this one is not a word, a (, or a ), then this must be a operator other than ( and ).
-      colon://buffer[i] == ';' by conversion from \n
-      operator_node_t current_op = build_operator(buffer, &i); //TODO, return a pointer
+	  colon:;//buffer[i] == ';' by conversion from \n
+	  operator_node_t current_op = build_operator(buffer, &i); //TODO, return a pointer
       if(is_empty_op(op_top))
       {
-        push_operator(op_top, current_op->type);
+        push_operator(op_top, current_op->content);
       }
       else
       {
-        if (precedence(current_op)>precedence(top_operator(op_top)) //TODO precedence just return a corresponding int for different ops, top_operator just peek the top element of the op_stack.
+        if (precedence(top_operator(current_op))>precedence(top_operator(op_top)))//TODO precedence just return a corresponding int for different ops, top_operator just peek the top element of the op_stack.
         {
-          push_operator(op_top, current_op->type);
+          push_operator(op_top, current_op->content);
         }
         else
         {
-          while(top_operator(op_top)->type != LPAR_OP && precedence(current_op) <= precedence(top_operator(op_top))
+          while(top_operator(op_top) != LPAR_OP && precedence(top_operator(current_op)) <= precedence(top_operator(op_top)))
           {
-            operator_type op_cb = pop_operator(op_top)->type;  //cb is short for combine
+            enum operator_type op_cb = pop_operator(op_top);  //cb is short for combine
             command_t second_conmmand = pop_command_stream(top);
             command_t first_conmmand = pop_command_stream(top);
             command_t command_cb = combine_command(first_conmmand, second_conmmand, op_cb);
               // TODO generate a new command based on two command and a connecting op, line number take the first command's 
             push_command_stream(top, command_cb);
-            if is_empty_op(op_top)
+            if (is_empty_op(op_top))
             {
               break;
             }
           }
-          push_operator(op_top, current_op);
+          push_operator(op_top, top_operator(current_op));
         }
       } 
 
@@ -412,12 +412,12 @@ command_stream_t parse(char* buffer, int* line_number)
 
   while(!is_empty_op(op_top))
   {
-    operator_type op_cb = pop_operator(op_top)->type;  //cb is short for combine
+    enum operator_type op_cb = pop_operator(op_top);  //cb is short for combine
     if( op_cb ==  LPAR_OP ||    
         op_cb ==  RPAR_OP) 
         {
           (*line)--;//EXPERIMENTAL to adjust this line numer to fit vvv
-          perror("%d: Parsing Error, unpaired parenthesis by the EOF") //TOCHECK line number should be the line of EOF 
+		  perror("%d: Parsing Error, unpaired parenthesis by the EOF"); //TOCHECK line number should be the line of EOF 
         } 
     command_t second_conmmand = pop_command_stream(top);
     command_t first_conmmand = pop_command_stream(top);
@@ -450,7 +450,7 @@ command_stream_t parse(char* buffer, int* line_number)
     Add it to the string with a space.
   Remove the last character (a space) from the string  */
 
-  free_op(op_top) = NULL;
+  free_op(op_top);
   return top;
 }
 

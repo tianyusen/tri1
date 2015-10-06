@@ -119,3 +119,7 @@ bool is_empty_op(operator_node_t top);
 enum operator_type pop_operator(operator_node_t op_top);
 command_t combine_command(command_t first_conmmand, command_t second_conmmand, enum operator_type last_op);
 bool is_op(char c); // DO THIS EASY and BASIC ONE FIRST
+operator_node_t build_operator(char* buffer, int* i);
+int precedence(enum operator_type type);
+enum operator_type top_operator(operator_node_t op_stack_top); //just read out the type
+void free_op(operator_node_t op_top);
