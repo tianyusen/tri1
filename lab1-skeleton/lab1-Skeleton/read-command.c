@@ -328,7 +328,7 @@ command_stream_t parse(char* buffer, int* line_number)
     }
     else if(buffer[i]=='(')
     {
-      push_operator(op_top, LPAR_OP);//TODO
+      push_operator(&op_top, LPAR_OP);//TODO
     }
 
     // else if the item is a right paren
@@ -341,15 +341,15 @@ command_stream_t parse(char* buffer, int* line_number)
     else if(buffer[i]==')')
     {
       if(is_empty_op(op_top)){ perror("%d: Parsing Error, unparied right parenthesis");}
-      enum operator_type last_op =  pop_operator(op_top);
+      enum operator_type last_op =  pop_operator(&op_top);
       while(last_op != LPAR_OP)
       {
         command_t second_conmmand = pop_command_stream(top);//TODO pop a command object off top, and return command_t, report error on line (line) if trying to pop empty steam
         command_t first_conmmand = pop_command_stream(top);
-        command_t command_cb = combine_command(first_conmmand, second_conmmand, last_op);
+        command_t command_cb = combine_command(&first_conmmand, &second_conmmand, last_op);
           // TODO generate a new command based on two command and a connecting op, line number take the first command's 
         push_command_stream(top, command_cb);
-        last_op =  pop_operator(op_top);
+        last_op =  pop_operator(&op_top);
         if(is_empty_op(op_top)){ perror("%d: Parsing Error, unparied right parenthesis");}
       }
       current_command = build_command(SUBSHELL_COMMAND,line);
@@ -364,28 +364,28 @@ command_stream_t parse(char* buffer, int* line_number)
     {
 		perror("%d: Parsing Error, in violation of (the only tokens that newlines can appear before are (, ), and the ﬁrst words of simple commands)");
     }
-    else if(is_op(buffer[i]))//TODO, evaluate buffer[i] first to avoid buffer[i+1] cause segmentation fault
+    else if(is_op(buffer,i))//TODO, evaluate buffer[i] first to avoid buffer[i+1] cause segmentation fault
     {//prev_newline == 0, and this one is not a word, a (, or a ), then this must be a operator other than ( and ).
 	  colon:;//buffer[i] == ';' by conversion from \n
 	  operator_node_t current_op = build_operator(buffer, &i); //TODO, return a pointer
       if(is_empty_op(op_top))
       {
-        push_operator(op_top, current_op->content);
+        push_operator(&op_top, current_op->content);
       }
       else
       {
         if (precedence(top_operator(current_op))>precedence(top_operator(op_top)))//TODO precedence just return a corresponding int for different ops, top_operator just peek the top element of the op_stack.
         {
-          push_operator(op_top, current_op->content);
+          push_operator(&op_top, current_op->content);
         }
         else
         {
           while(top_operator(op_top) != LPAR_OP && precedence(top_operator(current_op)) <= precedence(top_operator(op_top)))
           {
-            enum operator_type op_cb = pop_operator(op_top);  //cb is short for combine
+            enum operator_type op_cb = pop_operator(&op_top);  //cb is short for combine
             command_t second_conmmand = pop_command_stream(top);
             command_t first_conmmand = pop_command_stream(top);
-            command_t command_cb = combine_command(first_conmmand, second_conmmand, op_cb);
+            command_t command_cb = combine_command(&first_conmmand, &second_conmmand, op_cb);
               // TODO generate a new command based on two command and a connecting op, line number take the first command's 
             push_command_stream(top, command_cb);
             if (is_empty_op(op_top))
@@ -393,7 +393,7 @@ command_stream_t parse(char* buffer, int* line_number)
               break;
             }
           }
-          push_operator(op_top, top_operator(current_op));
+          push_operator(&op_top, top_operator(current_op));
         }
       } 
 
@@ -412,7 +412,7 @@ command_stream_t parse(char* buffer, int* line_number)
 
   while(!is_empty_op(op_top))
   {
-    enum operator_type op_cb = pop_operator(op_top);  //cb is short for combine
+    enum operator_type op_cb = pop_operator(&op_top);  //cb is short for combine
     if( op_cb ==  LPAR_OP ||    
         op_cb ==  RPAR_OP) 
         {
@@ -421,7 +421,7 @@ command_stream_t parse(char* buffer, int* line_number)
         } 
     command_t second_conmmand = pop_command_stream(top);
     command_t first_conmmand = pop_command_stream(top);
-    command_t command_cb = combine_command(first_conmmand, second_conmmand, op_cb);
+    command_t command_cb = combine_command(&first_conmmand, &second_conmmand, op_cb);
       // TODO generate a new command based on two command and a connecting op, line number take the first command's 
     push_command_stream(top, command_cb);
   }

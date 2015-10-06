@@ -3,8 +3,4 @@
 
 
 
-void push_command_stream(command_stream_t, command_t command)
-{
-	;
-}
 

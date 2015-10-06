@@ -115,14 +115,15 @@ void push_command_stream(command_stream_t, command_t command);
 void set_input(command_t current_command, char* inword);
 void set_output(command_t current_command, char* outword);
 
-//I start to do functions from here
-bool is_op(char c); // DO THIS EASY and BASIC ONE FIRST
+//DONE in functions2
+bool is_op(char* c, int i); // DO THIS EASY and BASIC ONE FIRST
 enum operator_type top_operator(operator_node_t op_stack_top); //just read out the type
 bool is_empty_op(operator_node_t top);
 int precedence(enum operator_type type);
 
-void push_operator(operator_node_t op_stack_top, enum operator_type type);
-enum operator_type pop_operator(operator_node_t op_top);
-command_t combine_command(command_t first_conmmand, command_t second_conmmand, enum operator_type last_op);
+//DONE in fucntions2
+void push_operator(operator_node_t* op_stack_top, enum operator_type type);
+enum operator_type pop_operator(operator_node_t* op_top);
+command_t combine_command(command_t* first_conmmand, command_t* second_conmmand, enum operator_type last_op);
 operator_node_t build_operator(char* buffer, int* i);
 void free_op(operator_node_t op_top);
