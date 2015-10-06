@@ -23,7 +23,7 @@
   #include <stdio.h>    // define EOF
   #include <stdlib.h>   // to free memory
     
-  #include <string.h>  \
+  #include <string.h>  
   // define strchr() 
   // retunr a pointer to the first occurrence of character in str.
   // If the character is not found, the function returns a null pointer.
