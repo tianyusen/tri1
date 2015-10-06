@@ -77,20 +77,17 @@ make_command_stream (int (*getbyte) (void *), void *arg)
 /* Read a command from STREAM; return it, or NULL on EOF.  If there is
    an error, report the error and exit instead of returning.  */
 command_t 
-read_command_stream (command_stream_t stream)
+read_command_stream(command_stream_t* stream)
 {
+	if ((*stream) == NULL)
+	{
+		return false;
+	}
+	command_stream_t head = (*stream)->next;
+	command_t result = (*stream)->m_command;
+	*stream = head;
+	return result;
 
-
-  //Implementation 
-
-  /* FIXME: Replace this with your implementation too.  */
-  //error (1, 0, "command reading not yet implemented");
-  return 0;
-
-  //rid of error
-
-
-  //End-Implementation 
 }
 
 
