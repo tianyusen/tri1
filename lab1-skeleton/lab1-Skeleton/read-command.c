@@ -2,7 +2,7 @@
 
 #include "command.h"
 #include "command-internals.h"
-#include <error.h>
+//#include <error.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -23,7 +23,7 @@
   #include <stdio.h>    // define EOF
   #include <stdlib.h>   // to free memory
     
-  #include <string.h>   
+  #include <string.h>  \
   // define strchr() 
   // retunr a pointer to the first occurrence of character in str.
   // If the character is not found, the function returns a null pointer.
@@ -60,16 +60,20 @@ make_command_stream (int (*getbyte) (void *), void *arg)
     if the size exceeds the INT_MAX return INT_MAX*/
   char* buffer;
   size_t buffer_count = load_buffer(buffer, getbyte, arg);
-  if (buffer_count == buffer_size && buffer_size > INT_MAX/2) { perror("Input size too large, read may be incomplete"); };
+  //if (buffer_count == buffer_size && buffer_size > INT_MAX/2) { perror("Input size too large, read may be incomplete"); };
 
 
   // process buffer
+    
+  
   command_stream_t command_stream = parse(buffer);
+   
+    
   // FIXME: check error
 
   // TODO: deallocate memory
   free(buffer);
-
+  //free_tokens(head);
 
   return command_stream;
 }
@@ -89,7 +93,6 @@ read_command_stream (command_stream_t stream)
   return 0;
 
   //rid of error
-  s;
 
 
   //End-Implementation 
@@ -179,7 +182,7 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg)
 
 
 //return true if hit max limit -- INT_MAX, used by load_buffer
-bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c) 
+bool buffer_push(char* buffer, size_t* buffer_size, size_t* content_count, char c)
 {
 /*  TO YeTian:
   Check this if buffer overflow is reported correctly, if the load_buffer() passes all cases, this is the only thing left to check for this one.
@@ -194,7 +197,7 @@ bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, c
   }
   if(*content_count  +1 == *buffer_size)
   {
-    if(*buffer_size > MAX_INT/2)
+    if(*buffer_size > INT_MAX/2)
     {
         //perror("Buffer size overflow");
         //abort();
@@ -206,8 +209,8 @@ bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, c
 
   //Load
 
-  buffer[*buffer_count] = c;
-  *buffer_count++;
+  buffer[*content_count] = c;
+  *content_count=*content_count+1;
   return false;
 }
 
@@ -262,6 +265,7 @@ command_stream_t parse(char* buffer, int* line_number)
 
         case 2:
           continue;
+      }
     }
     //else// not a \n which is implied since all case 0,1,2 have continue to intercept, 
     //{
@@ -270,15 +274,15 @@ command_stream_t parse(char* buffer, int* line_number)
     if(is_word(buffer[i])//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
     {
       if(prev_newline == 1){buffer[i] = ';'; goto colon;}
+      int count_word = 0;
+      size_t buffer_size = 2*sizeof(char*);
 
       current_command = build_command(SIMPLE_COMMAND, line); //TODO(y) return a empty command that is properly initialized.
       //int word_count = 0;
       nextword:
       //INTERFACE:   
       char* new_word = read_word(buffer,&i); // TODO read in a word and allocate space for it and return a pointer to that space, end with EOF, modify i so that it points to the first character not in the word.
-      push_word(new_word, current_command) //TODO, simply append new_word in the current_command's structure
-      //word_count ++;
-
+      push_word(new_word, count_word, buffer_size, current_command) //TODO, simply append new_word in the current_command's structure
       //Now buffer[i] points to something not is_word()
 
       // for (;isword(buffer[i]);i++)
@@ -405,8 +409,10 @@ command_stream_t parse(char* buffer, int* line_number)
       } 
 
     }
-
-
+    else// not a legit character
+    {
+      perror("%d: Parsing Error, non-standard character.");
+    }
     prev_newline = 0;
     if(false)//EMERGENCY EXIT buffer[i] == EOF
       {
@@ -457,7 +463,6 @@ command_stream_t parse(char* buffer, int* line_number)
 
   free_op(op_top) = NULL;
   return top;
-
 }
 
 
