@@ -29,7 +29,7 @@ command_indented_print (int indent, command_t c)
       {
       	char **w = c->u.word;
       	printf ("%*s%s", indent, "", *w);
-      	while (*++w)
+      	while (*++w) // *++ptr; // Pointer moves to the next int position, and then get's accessed
       	  printf (" %s", *w);
       	break;
       }
