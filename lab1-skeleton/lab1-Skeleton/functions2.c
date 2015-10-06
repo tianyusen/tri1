@@ -44,7 +44,7 @@ enum operator_type top_operator(operator_node_t op_stack_top) //just read out th
 }
 bool is_empty_op(operator_node_t top)
 {
-	top == NULL ? true : false;
+	return (top == NULL ? true : false);
 }
 int precedence(enum operator_type type)
 {
@@ -61,7 +61,7 @@ int precedence(enum operator_type type)
 
 void push_operator(operator_node_t* op_stack_top, enum operator_type type)
 {
-	size_t size = sizeof(operator_node);
+	size_t size = sizeof(struct operator_node);
 	operator_node_t new_op_t = (operator_node_t)checked_malloc(size);
 	new_op_t->content = type;
 	new_op_t->next = NULL;
@@ -88,10 +88,11 @@ enum operator_type pop_operator(operator_node_t* op_top)
 }
 command_t combine_command(command_t* first_command, command_t* second_command, enum operator_type last_op)
 {
-	command_type type;
+	enum command_type type;
 	switch (last_op)
 	{
-	case AND_OP: type = AND_COMMAND;
+	case AND_OP: 
+		type = AND_COMMAND;
 		break;
 	case SEQUENCE_OP: type = SEQUENCE_COMMAND;
 		break;
@@ -99,7 +100,7 @@ command_t combine_command(command_t* first_command, command_t* second_command, e
 		break;
 	case PIPE_OP: type = PIPE_COMMAND;
 	default:
-		perror("%d: Parsing Error, unfit operator positioning", (*first_command)->line);
+		fprintf(stderr, "%d: Parsing Error, unfit operator positioning", (*first_command)->line);
 		break;
 	}
 	command_t new_command = build_command(type, &(*first_command)->line);
@@ -114,7 +115,7 @@ operator_node_t build_operator(char* buffer, int* i)
 		perror( "Logic Error 114" );
 		abort();
 	}
-	size_t size = sizeof(operator_node);
+	size_t size = sizeof(struct operator_node);
 	operator_node_t new_op = (operator_node_t)checked_malloc(size);
 	new_op->next = NULL;
 	new_op->prev = NULL;
@@ -145,7 +146,7 @@ void free_op(operator_node_t op_top)
 {
 	while (op_top != NULL)
 	{
-		pop_operator(op_top);
+		pop_operator(&op_top);
 	}
 }
 
