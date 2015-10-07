@@ -13,7 +13,7 @@ static char const *script_name;
 static void
 usage (void)
 {
-  error (1, 0, "usage: %s [-pt] SCRIPT-FILE", program_name);
+  //error (1, 0, "usage: %s [-pt] SCRIPT-FILE", program_name);
 }
 
 static int
@@ -46,9 +46,10 @@ main (int argc, char **argv)
     usage ();
 
   script_name = argv[optind];
-  FILE *script_stream = fopen (script_name, "r");
-  if (! script_stream)
-    error (1, errno, "%s: cannot open", script_name);
+  FILE *script_stream = fopen ("/Users/TianYe/Documents/CS111/tri1/lab1-skeleton/lab1-Skeleton/test-p-ok.sh", "r");
+
+  //if (! script_stream)
+      //error (1, errno, "%s: cannot open", script_name);
   command_stream_t command_stream =
     make_command_stream (get_next_byte, script_stream);
 
