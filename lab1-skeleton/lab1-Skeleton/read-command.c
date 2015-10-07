@@ -238,7 +238,12 @@ command_stream_t parse(char* buffer, int* line_number)
 	  //}
 	  if (is_word(buffer[i]))//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
 	  {
-		  if (prev_newline == 1) { buffer[i-1] = ';'; last_space_to_colon = true; goto colon; }
+		  if (prev_newline == 1) 
+		  {
+			  buffer[i-1] = ';'; 
+			  last_space_to_colon = true; 
+			  goto colon; 
+		  }
 		  int count_word = 0;
 		  size_t buffer_size = 2 * sizeof(char*);
 
@@ -407,7 +412,7 @@ command_stream_t parse(char* buffer, int* line_number)
     {
       abort();//+perror("%d: Parsing Error, non-standard character.");
     }
-    prev_newline = 0;
+    //prev_newline = 0;
     if(false)//EMERGENCY EXIT buffer[i] == EOF
       {
         pares_EOF:

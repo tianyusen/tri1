@@ -109,7 +109,7 @@ the return value is the size of the content loaded.
 count==0 means the first read is EOF, buffer starts with NULL
 when the size of the buffer is not big enough, double the size.
 if the size exceeds the INT_MAX return INT_MAX*/
-size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg);
+size_t load_buffer(char** buffer, int (*getbyte) (void *), void *arg);
 
 
 //return true if hit max limit -- INT_MAX
