@@ -2,30 +2,8 @@
 
 #include "command.h"
 #include "command-internals.h"
+#include "alloc.h"
 //#include <error.h>
-
-/* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
-//Implementation
-
-  #include "alloc.h"    
-  // safely allocate memory (provided by skeleton)
-
-  #include <ctype.h>    
-  // define isalnum(): returns value different from zero (i.e., true) 
-  // if indeed c is either a digit or a letter. Zero (i.e., false) otherwise.
-  
-   #include <limits.h>   // INT_MAX
-  //  #include <stdbool.h>  // required for boolean functions (ref)
-
-  #include <stdio.h>    // define EOF
-  #include <stdlib.h>   // to free memory
-    
-  #include <string.h>  
-  // define strchr() 
-  // retunr a pointer to the first occurrence of character in str.
-  // If the character is not found, the function returns a null pointer.
-//End-Implementation
 
 
 /* Create a command stream from LABEL, GETBYTE, and ARG.  A reader of
@@ -191,8 +169,8 @@ bool buffer_push(char* buffer, size_t* buffer_size, size_t* content_count, char 
   {
     if(*buffer_size > INT_MAX/2)
     {
-        //perror("Buffer size overflow");
-        //abort();
+        perror("Buffer size overflow");
+        abort();
         return true;
     }
     *buffer_size = *buffer_size * 2;
@@ -262,7 +240,7 @@ command_stream_t parse(char* buffer, int* line_number)
 	  if (prev_newline == 1){ buffer[i] = ';'; last_space_to_colon = true; goto colon; }
 	  int count_word = 0;
       size_t buffer_size = 2*sizeof(char*);
-
+        
       current_command = build_command(SIMPLE_COMMAND,line); //TODO(y) return a empty command that is properly initialized.
       //int word_count = 0;
 	  nextword:;
@@ -326,6 +304,7 @@ command_stream_t parse(char* buffer, int* line_number)
     else if(buffer[i]=='(')
     {
       push_operator(&op_top, LPAR_OP);//TODO
+        goto consume;
     }
 
     // else if the item is a right paren
@@ -393,12 +372,16 @@ command_stream_t parse(char* buffer, int* line_number)
           push_operator(&op_top, top_operator(current_op));
         }
       }
+        
+        consume:
+        
 	  if (!last_space_to_colon)
 	  {
 		  while (buffer[i + 1] == '\n' || buffer[i + 1] == ' ')
 		  {
 			  i++;
 		  }
+          last_space_to_colon = false;
 	  }
 
     }

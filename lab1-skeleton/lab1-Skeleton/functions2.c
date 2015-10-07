@@ -1,28 +1,7 @@
 #include "command.h"
 #include "command-internals.h"
+#include "alloc.h"
 //#include <error.h>
-
-/* FIXME: You may need to add #include directives, macro definitions,
-static function definitions, etc.  */
-//Implementation
-
-#include "alloc.h"    
-// safely allocate memory (provided by skeleton)
-
-#include <ctype.h>    
-// define isalnum(): returns value different from zero (i.e., true) 
-// if indeed c is either a digit or a letter. Zero (i.e., false) otherwise.
-
-#include <limits.h>   // INT_MAX
-//  #include <stdbool.h>  // required for boolean functions (ref)
-
-#include <stdio.h>    // define EOF
-#include <stdlib.h>   // to free memory
-#include <string.h>  
-
-
-
-
 
 bool is_op(char* c, int i) // DO THIS EASY and BASIC ONE FIRST
 {
@@ -103,7 +82,7 @@ command_t combine_command(command_t* first_command, command_t* second_command, e
 		fprintf(stderr, "%d: Parsing Error, unfit operator positioning", (*first_command)->line);
 		break;
 	}
-	command_t new_command = build_command(type, &(*first_command)->line);
+	command_t new_command = build_command(type, &((*first_command)->line));
 	new_command->u.command[0] = *first_command;
 	new_command->u.command[1] = *second_command;
 	return new_command;

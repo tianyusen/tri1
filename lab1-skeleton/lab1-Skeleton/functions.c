@@ -9,29 +9,7 @@
 
 #include "command.h"
 #include "command-internals.h"
-
-//#include <error.h>
-
-/* FIXME: You may need to add #include directives, macro definitions,
- static function definitions, etc.  */
-//Implementation
-
 #include "alloc.h"
-// safely allocate memory (provided by skeleton)
-
-
-
-#include <ctype.h>
-// define isalnum(): returns value different from zero (i.e., true)
-// if indeed c is either a digit or a letter. Zero (i.e., false) otherwise.
-
-#include <limits.h>   // INT_MAX
-//  #include <stdbool.h>  // required for boolean functions (ref)
-
-#include <stdio.h>    // define EOF
-#include <stdlib.h>   // to free memory
-
-#include <string.h>
 
 char* read_word(char* buffer, int *i);
 command_t build_command(enum command_type type, int* line);
@@ -47,28 +25,31 @@ char* read_word(char* buffer, int *i){
     char c = buffer[*i];
     size_t count = 0;
     
-    buffer[count] = c;
-    count=count+1;
-    *i = *i+1;
-    
-    
-    while ((is_word(c = buffer[*i]))&&(c != ' ')) {
+    while ((is_word(c))&&(c != ' ')) {
         if(count+1 == buffer_size)
         {
             buffer_size = buffer_size * 2;
             *new_word = checked_grow_alloc(buffer,buffer_size);
         }
-        buffer[count] = c;
+        new_word[count] = c;
         *i = *i+1;
         count++;
+        c = buffer[*i];
+        
+    }
+    
+    if (c == ' ') {
+        *i = *i+1;
     }
     
     return new_word;
 }
 
+
 command_t build_command(enum command_type type, int* line){
     
-    command_t new_command;
+    
+    command_t new_command = checked_malloc(sizeof(struct command));
     new_command->type = type;
     new_command->status = -1;
     new_command->line = *line;
@@ -86,7 +67,7 @@ command_t pop_command_stream(command_stream_t stream){
         stream->next = stream->prev;
     }
     
-    command_t new_command;
+    command_t new_command = checked_malloc(sizeof(struct command));
     new_command->type = stream->m_command->type;
     new_command->status = stream->m_command->status;
     new_command->input = stream->m_command->input;
@@ -109,13 +90,13 @@ void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t cur
     {
         if ((*num_word*(sizeof(char*))+1) >= INT_MAX)
         {
-            //perror("Buffer size overflow");
-            //abort();
+            perror("Buffer size overflow");
+            abort();
         }
         if (((*num_word)*(sizeof(char*))+1) >= *buffer_size) {
             if ((*num_word*(sizeof(char*))+1) >= INT_MAX/2) {
-                //perror("Buffer size overflow");
-                //abort();
+                perror("Buffer size overflow");
+                abort();
             }
             *buffer_size = *buffer_size * 2;
             *current_command->u.word = checked_grow_alloc(current_command->u.word,buffer_size);

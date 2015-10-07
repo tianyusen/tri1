@@ -1,10 +1,23 @@
 // UCLA CS 111 Lab 1 command interface
 #include <stdbool.h>
 #include <stdio.h>
+ // safely allocate memory (provided by skeleton)
+#include <error.h>
+#include <ctype.h>
+// define isalnum(): returns value different from zero (i.e., true)
+// if indeed c is either a digit or a letter. Zero (i.e., false) otherwise.
+#include <limits.h>   // INT_MAX
+//  #include <stdbool.h>  // required for boolean functions (ref)
+#include <stdlib.h>   // to free memory
+#include <string.h>
+
+
 
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 typedef struct operator_node *operator_node_t;
+
+enum command_type;
 
 //Implementation
 	//Linked list for file names
@@ -110,8 +123,8 @@ command_t build_command(enum command_type type, int* line);
 command_t pop_command_stream(command_stream_t stream);
 void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command);
 
-
-void push_command_stream(command_stream_t, command_t command);
+void push_command_stream(command_stream_t* top, command_t current_command);
+//void push_command_stream(command_stream_t, command_t command);
 void set_input(command_t current_command, char* inword);
 void set_output(command_t current_command, char* outword);
 
