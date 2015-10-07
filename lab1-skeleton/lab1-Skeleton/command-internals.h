@@ -1,6 +1,6 @@
 // UCLA CS 111 Lab 1 command internals
 
-enum command_type
+typedef enum
 {
     AND_COMMAND,         // A && B
     SEQUENCE_COMMAND,    // A ; B
@@ -8,7 +8,7 @@ enum command_type
     PIPE_COMMAND,        // A | B
     SIMPLE_COMMAND,      // a simple command
     SUBSHELL_COMMAND,    // ( A )
-};
+} command_type;
 
 struct word_list{
     char* word;
@@ -19,7 +19,7 @@ struct word_list{
 // Data associated with a command.
 struct command
 {
-    enum command_type type;
+    command_type type;
     
     // Exit status, or -1 if not known (e.g., because it has not exited yet).
     int status;

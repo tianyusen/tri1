@@ -11,13 +11,15 @@
 #include <stdlib.h>   // to free memory
 #include <string.h>
 
-
+#include "command-internals.h"
 
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 typedef struct operator_node *operator_node_t;
 
-enum command_type;
+//enum command_type;
+//enum operator_type;
+
 
 //Implementation
 	//Linked list for file names
@@ -39,7 +41,7 @@ enum command_type;
 	      command_stream_t prev;
 	    };
 	//operator stack for parse()    
-	enum operator_type
+	typedef enum
 	{
 	    AND_OP,         // A && B
 	    SEQUENCE_OP,    // A ; B
@@ -47,12 +49,12 @@ enum command_type;
 	    PIPE_OP,        // A | B
 	    LPAR_OP,      // (
 	    RPAR_OP,    // ) 
-    };
+    } operator_type;
 	struct operator_node 
 	{
 	  operator_node_t next;
 	  operator_node_t prev;
-	  enum operator_type content;
+	  operator_type content;
 	};
 
 //End-Implementation
@@ -114,12 +116,12 @@ size_t load_buffer(char* buffer, int (*getbyte) (void *), void *arg);
 bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, char c);
 
 
-command_stream_t parse(char* buffer, int* line_number);
+//command_stream_t parse(char* buffer, int* line_number);
 
 
 //Small functions
 char* read_word(char* buffer, int *i);
-command_t build_command(enum command_type type, int* line);
+command_t build_command(command_type type, int* line);
 command_t pop_command_stream(command_stream_t stream);
 void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command);
 
@@ -130,13 +132,16 @@ void set_output(command_t current_command, char* outword);
 
 //DONE in functions2
 bool is_op(char* c, int i); // DO THIS EASY and BASIC ONE FIRST
-enum operator_type top_operator(operator_node_t op_stack_top); //just read out the type
+operator_type top_operator(operator_node_t op_stack_top); //just read out the type
 bool is_empty_op(operator_node_t top);
-int precedence(enum operator_type type);
+int precedence(operator_type type);
 
 //DONE in fucntions2
-void push_operator(operator_node_t* op_stack_top, enum operator_type type);
-enum operator_type pop_operator(operator_node_t* op_top);
-command_t combine_command(command_t* first_conmmand, command_t* second_conmmand, enum operator_type last_op);
+void push_operator(operator_node_t* op_stack_top, operator_type type);
+operator_type pop_operator(operator_node_t* op_top);
+command_t combine_command(command_t* first_conmmand, command_t* second_conmmand, operator_type last_op);
 operator_node_t build_operator(char* buffer, int* i);
 void free_op(operator_node_t op_top);
+
+
+command_stream_t parse(char* buffer, int* line_number);

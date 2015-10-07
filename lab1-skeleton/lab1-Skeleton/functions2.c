@@ -1,5 +1,5 @@
 #include "command.h"
-#include "command-internals.h"
+//#include "command-internals.h"
 #include "alloc.h"
 //#include <error.h>
 
@@ -17,7 +17,7 @@ bool is_op(char* c, int i) // DO THIS EASY and BASIC ONE FIRST
 	}
 
 }
-enum operator_type top_operator(operator_node_t op_stack_top) //just read out the type
+operator_type top_operator(operator_node_t op_stack_top) //just read out the type
 {
 	return op_stack_top->content;
 }
@@ -25,7 +25,7 @@ bool is_empty_op(operator_node_t top)
 {
 	return (top == NULL ? true : false);
 }
-int precedence(enum operator_type type)
+int precedence(operator_type type)
 {
 	switch (type)
 	{
@@ -38,7 +38,7 @@ int precedence(enum operator_type type)
 }
 
 
-void push_operator(operator_node_t* op_stack_top, enum operator_type type)
+void push_operator(operator_node_t* op_stack_top, operator_type type)
 {
 	size_t size = sizeof(struct operator_node);
 	operator_node_t new_op_t = (operator_node_t)checked_malloc(size);
@@ -57,17 +57,17 @@ void push_operator(operator_node_t* op_stack_top, enum operator_type type)
 	}
 }
 
-enum operator_type pop_operator(operator_node_t* op_top)
+operator_type pop_operator(operator_node_t* op_top)
 {
-	enum operator_type result = (*op_top)->content;
+	operator_type result = (*op_top)->content;
 	operator_node_t temp = (*op_top)->prev;
 	free(*op_top);
 	*op_top = temp;
 	return result;
 }
-command_t combine_command(command_t* first_command, command_t* second_command, enum operator_type last_op)
+command_t combine_command(command_t* first_command, command_t* second_command, operator_type last_op)
 {
-	enum command_type type;
+	command_type type;
 	switch (last_op)
 	{
 	case AND_OP: 

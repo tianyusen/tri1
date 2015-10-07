@@ -1,7 +1,7 @@
 // UCLA CS 111 Lab 1 command reading
 
 #include "command.h"
-#include "command-internals.h"
+//#include "command-internals.h"
 #include "alloc.h"
 //#include <error.h>
 
@@ -203,7 +203,8 @@ command_stream_t parse(char* buffer, int* line_number)
   command_t current_command = NULL;
   bool last_space_to_colon = false;
 
-  for(int i = 0; buffer[i] != EOF; i++) //each loop is a newline
+  int i;
+  for(i = 0; buffer[i] != EOF; i++) //each loop is a newline
   {
     if(buffer[i] == ' ')//EXPERIMENTAL:consume space
     {
@@ -299,7 +300,7 @@ command_stream_t parse(char* buffer, int* line_number)
             }
           case EOF: goto pares_EOF;
       }
-      push_command_stream(top, current_command);//TODO(y) move top to pointing to current_command, and link up the last command
+      push_command_stream(&top, current_command);//TODO(y) move top to pointing to current_command, and link up the last command
     }
     else if(buffer[i]=='(')
     {
@@ -317,14 +318,14 @@ command_stream_t parse(char* buffer, int* line_number)
     else if(buffer[i]==')')
     {
       if(is_empty_op(op_top)){ perror("%d: Parsing Error, unparied right parenthesis");}
-      enum operator_type last_op =  pop_operator(&op_top);
+      operator_type last_op =  pop_operator(&op_top);
       while(last_op != LPAR_OP)
       {
         command_t second_conmmand = pop_command_stream(top);//TODO pop a command object off top, and return command_t, report error on line (line) if trying to pop empty steam
         command_t first_conmmand = pop_command_stream(top);
         command_t command_cb = combine_command(&first_conmmand, &second_conmmand, last_op);
           // TODO generate a new command based on two command and a connecting op, line number take the first command's 
-        push_command_stream(top, command_cb);
+        push_command_stream(&top, command_cb);
         last_op =  pop_operator(&op_top);
         if(is_empty_op(op_top)){ perror("%d: Parsing Error, unparied right parenthesis");}
       }
@@ -358,12 +359,12 @@ command_stream_t parse(char* buffer, int* line_number)
         {
           while(top_operator(op_top) != LPAR_OP && precedence(top_operator(current_op)) <= precedence(top_operator(op_top)))
           {
-            enum operator_type op_cb = pop_operator(&op_top);  //cb is short for combine
+            operator_type op_cb = pop_operator(&op_top);  //cb is short for combine
             command_t second_conmmand = pop_command_stream(top);
             command_t first_conmmand = pop_command_stream(top);
             command_t command_cb = combine_command(&first_conmmand, &second_conmmand, op_cb);
               // TODO generate a new command based on two command and a connecting op, line number take the first command's 
-            push_command_stream(top, command_cb);
+            push_command_stream(&top, command_cb);
             if (is_empty_op(op_top))
             {
               break;
@@ -399,7 +400,7 @@ command_stream_t parse(char* buffer, int* line_number)
 
   while(!is_empty_op(op_top))
   {
-    enum operator_type op_cb = pop_operator(&op_top);  //cb is short for combine
+    operator_type op_cb = pop_operator(&op_top);  //cb is short for combine
     if( op_cb ==  LPAR_OP ||    
         op_cb ==  RPAR_OP) 
         {
@@ -410,7 +411,7 @@ command_stream_t parse(char* buffer, int* line_number)
     command_t first_conmmand = pop_command_stream(top);
     command_t command_cb = combine_command(&first_conmmand, &second_conmmand, op_cb);
       // TODO generate a new command based on two command and a connecting op, line number take the first command's 
-    push_command_stream(top, command_cb);
+    push_command_stream(&top, command_cb);
   }
 
 
@@ -442,4 +443,273 @@ command_stream_t parse(char* buffer, int* line_number)
 }
 
 
+
+//
+//  functions.c
+//  tri1_tianye003
+//
+//  Created by YeTian on 10/4/15.
+//  Copyright (c) 2015 YeTian. All rights reserved.
+//
+
+
+//#include "command.h"
+//#include "command-internals.h"
+//#include "alloc.h"
+
+//char* read_word(char* buffer, int *i);
+//command_t build_command(enum command_type type, int* line);
+//command_t pop_command_stream(command_stream_t stream);
+//void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command);
+//void push_command_stream(command_stream_t* top, command_t current_command);
+//void set_input(command_t current_command, char* inword);
+//void set_output(command_t current_command, char* outword);
+
+char* read_word(char* buffer, int *i){
+    size_t buffer_size = 2048;
+    char* new_word = checked_malloc(buffer_size);
+    char c = buffer[*i];
+    size_t count = 0;
+    
+    while ((is_word(c))&&(c != ' ')) {
+        if(count+1 == buffer_size)
+        {
+            buffer_size = buffer_size * 2;
+            new_word = checked_grow_alloc(buffer , &buffer_size);
+        }
+        new_word[count] = c;
+        *i = *i+1;
+        count++;
+        c = buffer[*i];
+        
+    }
+    
+    if (c == ' ') {
+        *i = *i+1;
+    }
+    
+    return new_word;
+}
+
+
+command_t build_command(command_type type, int* line){
+    
+    
+    command_t new_command = checked_malloc(sizeof(struct command));
+    new_command->type = type;
+    new_command->status = -1;
+    new_command->line = *line;
+    
+    return new_command;
+    
+}
+
+command_t pop_command_stream(command_stream_t stream){
+    if (stream->prev != NULL) {
+        stream->prev = stream->next;
+    }
+    
+    if (stream->next != NULL) {
+        stream->next = stream->prev;
+    }
+    
+    command_t new_command = checked_malloc(sizeof(struct command));
+    new_command->type = stream->m_command->type;
+    new_command->status = stream->m_command->status;
+    new_command->input = stream->m_command->input;
+    new_command->output = stream->m_command->output;
+    new_command->line = stream->m_command->line;
+    new_command->u = stream->m_command->u;
+    
+    free(stream->m_command);
+    free(stream);
+    
+    return new_command;
+}
+
+void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command){
+    if (current_command->u.word == NULL) {
+        //size_t buffer_size = 2*sizeof(char*);
+        current_command->u.word = checked_malloc(*buffer_size);
+    }
+    else
+    {
+        if ((*num_word*(sizeof(char*))+1) >= INT_MAX)
+        {
+            perror("Buffer size overflow");
+            abort();
+        }
+        if (((*num_word)*(sizeof(char*))+1) >= *buffer_size) {
+            if ((*num_word*(sizeof(char*))+1) >= INT_MAX/2) {
+                perror("Buffer size overflow");
+                abort();
+            }
+            *buffer_size = *buffer_size * 2;
+            *current_command->u.word = checked_grow_alloc(current_command->u.word,buffer_size);
+        }
+    }
+    
+    char* copy = checked_malloc(strlen(new_word)+1);
+    strcpy(copy,new_word);
+    
+    current_command->u.word[*num_word]= copy;
+    *num_word = *num_word+1;
+    
+    free(new_word);
+    
+}
+
+void push_command_stream(command_stream_t* top, command_t current_command){
+  command_stream_t new_stream = checked_malloc(sizeof(struct command_stream));
+    new_stream->m_command = current_command;
+    new_stream->prev = NULL;
+    new_stream->next = *top;
+    new_stream->next->prev = new_stream;
+    *top = new_stream;
+}
+
+void set_input(command_t current_command, char* inword){
+    char* copy = checked_malloc(strlen(inword)+1);
+    strcpy(copy, inword);
+    current_command->input = copy;
+    free(inword);
+}
+
+void set_output(command_t current_command, char* outword){
+    char* copy = checked_malloc(strlen(outword)+1);
+    strcpy(copy, outword);
+    current_command->output = copy;
+    free(outword);
+}
+
+//#include "command.h"
+//#include "command-internals.h"
+//#include "alloc.h"
+//#include <error.h>
+
+bool is_op(char* c, int i) // DO THIS EASY and BASIC ONE FIRST
+{
+	if (c[i] == ';' ||
+		c[i] == '|' ||
+		(c[i] == '&' && c[i + 1] == '&'))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
+}
+operator_type top_operator(operator_node_t op_stack_top) //just read out the type
+{
+	return op_stack_top->content;
+}
+bool is_empty_op(operator_node_t top)
+{
+	return (top == NULL ? true : false);
+}
+int precedence(operator_type type)
+{
+	switch (type)
+	{
+	case PIPE_OP: return 3;
+	case AND_OP:
+	case OR_OP: return 2;
+	case SEQUENCE_OP: return 1;
+	default: return 4; //parent
+	}
+}
+
+
+void push_operator(operator_node_t* op_stack_top, operator_type type)
+{
+	size_t size = sizeof(struct operator_node);
+	operator_node_t new_op_t = (operator_node_t)checked_malloc(size);
+	new_op_t->content = type;
+	new_op_t->next = NULL;
+	if (*op_stack_top == NULL)
+	{
+		new_op_t->prev = NULL;
+		*op_stack_top = new_op_t;
+	}
+	else// stack is not empty
+	{
+		new_op_t->prev = *op_stack_top;
+		(*op_stack_top)->next = new_op_t;
+		*op_stack_top = new_op_t;
+	}
+}
+
+operator_type pop_operator(operator_node_t* op_top)
+{
+	operator_type result = (*op_top)->content;
+	operator_node_t temp = (*op_top)->prev;
+	free(*op_top);
+	*op_top = temp;
+	return result;
+}
+command_t combine_command(command_t* first_command, command_t* second_command, operator_type last_op)
+{
+	command_type type;
+	switch (last_op)
+	{
+	case AND_OP: 
+		type = AND_COMMAND;
+		break;
+	case SEQUENCE_OP: type = SEQUENCE_COMMAND;
+		break;
+	case OR_OP:	type = OR_COMMAND;
+		break;
+	case PIPE_OP: type = PIPE_COMMAND;
+	default:
+		fprintf(stderr, "%d: Parsing Error, unfit operator positioning", (*first_command)->line);
+		break;
+	}
+	command_t new_command = build_command(type, &((*first_command)->line));
+	new_command->u.command[0] = *first_command;
+	new_command->u.command[1] = *second_command;
+	return new_command;
+}
+operator_node_t build_operator(char* buffer, int* i)
+{
+	if (!is_op(buffer, *i))
+	{
+		perror( "Logic Error 114" );
+		abort();
+	}
+	size_t size = sizeof(struct operator_node);
+	operator_node_t new_op = (operator_node_t)checked_malloc(size);
+	new_op->next = NULL;
+	new_op->prev = NULL;
+	switch (buffer[(*i)])
+	{
+	case ';':
+		new_op->content = SEQUENCE_OP;
+		break;
+	case '|':
+		if (buffer[(*i) + 1] == '|')
+		{
+			(*i)++;
+			new_op->content = OR_OP;
+		}
+		else
+		{
+			new_op->content = PIPE_OP;
+		}
+		break;
+	case '&':
+		(*i)++;
+		new_op->content = AND_OP;
+		break;
+	}
+	return new_op;
+}
+void free_op(operator_node_t op_top)
+{
+	while (op_top != NULL)
+	{
+		pop_operator(&op_top);
+	}
+}
 
