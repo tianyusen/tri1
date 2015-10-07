@@ -2,14 +2,22 @@
 
 #include "alloc.h"
 
+<<<<<<< HEAD
 //#include <error.h>
+=======
+//+#include <error.h>
+>>>>>>> 74ff8ba805069680fc2d2035d804143bba7ca320
 #include <errno.h>
 #include <stdlib.h>
 
 static void
 memory_exhausted (int errnum)
 {
+<<<<<<< HEAD
   //error (1, errnum, "memory exhausted");
+=======
+  //+error (1, errnum, "memory exhausted");
+>>>>>>> 74ff8ba805069680fc2d2035d804143bba7ca320
 }
 
 static void *

@@ -2,7 +2,11 @@
 #include <stdbool.h>
 #include <stdio.h>
  // safely allocate memory (provided by skeleton)
+<<<<<<< HEAD
 //#include <error.h>
+=======
+//+#include <error.h>
+>>>>>>> 74ff8ba805069680fc2d2035d804143bba7ca320
 #include <ctype.h>
 // define isalnum(): returns value different from zero (i.e., true)
 // if indeed c is either a digit or a letter. Zero (i.e., false) otherwise.
