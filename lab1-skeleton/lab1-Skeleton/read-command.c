@@ -31,7 +31,7 @@ make_command_stream (int (*getbyte) (void *), void *arg)
     when the size of the buffer is not big enough, double the size.
     if the size exceeds the INT_MAX return INT_MAX*/
 	char* buffer = NULL;
-  int lineN = 0;
+  int lineN = 1;
   size_t buffer_count = load_buffer(&buffer, getbyte, arg);
   //if (buffer_count == buffer_size && buffer_size > INT_MAX/2) { perror("Input size too large, read may be incomplete"); };
 
@@ -238,7 +238,7 @@ command_stream_t parse(char* buffer, int* line_number)
 	  //}
 	  if (is_word(buffer[i]))//meet a simple command, record this into a command object and push to stack, it should finish when meeting <,>,;,\n\n
 	  {
-		  if (prev_newline == 1) { buffer[i] = ';'; last_space_to_colon = true; goto colon; }
+		  if (prev_newline == 1) { buffer[i-1] = ';'; last_space_to_colon = true; goto colon; }
 		  int count_word = 0;
 		  size_t buffer_size = 2 * sizeof(char*);
 
@@ -262,6 +262,9 @@ command_stream_t parse(char* buffer, int* line_number)
 		  {
 		  case '<': goto word_IN; break;
 		  case '>': goto word_OUT; break;
+		  case '\n': (*line)++;
+			  prev_newline = 1;
+			  break;
 		  case ' ':
 			  if (is_word(buffer[i + 1]))
 			  {
@@ -584,9 +587,13 @@ void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t cur
 void push_command_stream(command_stream_t* top, command_t current_command){
   command_stream_t new_stream = checked_malloc(sizeof(struct command_stream));
     new_stream->m_command = current_command;
-    new_stream->prev = NULL;
-    new_stream->next = *top;
-    new_stream->next->prev = new_stream;
+    new_stream->next = NULL;
+    new_stream->prev = *top;
+	if (new_stream->prev != NULL)
+	{
+		new_stream->prev->next = new_stream;
+	}
+    
     *top = new_stream;
 }
 
