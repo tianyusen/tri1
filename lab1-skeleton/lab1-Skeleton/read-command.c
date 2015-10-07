@@ -499,32 +499,24 @@ command_t build_command(command_type type, int* line){
     new_command->type = type;
     new_command->status = -1;
     new_command->line = *line;
-    
+    new_command->input = NULL;
+    new_command->output = NULL;
     return new_command;
     
 }
 
 command_t pop_command_stream(command_stream_t stream){
     if (stream->prev != NULL) {
-        stream->prev = stream->next;
+        stream->prev->next = stream->next;
+	stream->prev = NULL;
     }
     
     if (stream->next != NULL) {
-        stream->next = stream->prev;
+        stream->next->prev = stream->prev;
+	stream->next = NULL;
     }
     
-    command_t new_command = checked_malloc(sizeof(struct command));
-    new_command->type = stream->m_command->type;
-    new_command->status = stream->m_command->status;
-    new_command->input = stream->m_command->input;
-    new_command->output = stream->m_command->output;
-    new_command->line = stream->m_command->line;
-    new_command->u = stream->m_command->u;
-    
-    free(stream->m_command);
-    free(stream);
-    
-    return new_command;
+    return stream->m_command;
 }
 
 void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command){
@@ -549,13 +541,13 @@ void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t cur
         }
     }
     
-    char* copy = checked_malloc(strlen(new_word)+1);
-    strcpy(copy,new_word);
+    //char* copy = checked_malloc(strlen(new_word)+1);
+    //strcpy(copy,new_word);
     
-    current_command->u.word[*num_word]= copy;
+    current_command->u.word[*num_word]= new_word;
     *num_word = *num_word+1;
     
-    free(new_word);
+    //free(new_word);
     
 }
 
@@ -569,17 +561,17 @@ void push_command_stream(command_stream_t* top, command_t current_command){
 }
 
 void set_input(command_t current_command, char* inword){
-    char* copy = checked_malloc(strlen(inword)+1);
-    strcpy(copy, inword);
-    current_command->input = copy;
-    free(inword);
+  //char* copy = checked_malloc(strlen(inword)+1);
+  //strcpy(copy, inword);
+    current_command->input = inword;
+    //free(inword);
 }
 
 void set_output(command_t current_command, char* outword){
-    char* copy = checked_malloc(strlen(outword)+1);
-    strcpy(copy, outword);
-    current_command->output = copy;
-    free(outword);
+  //char* copy = checked_malloc(strlen(outword)+1);
+  //strcpy(copy, outword);
+    current_command->output = outword;
+    //free(outword);
 }
 
 //#include "command.h"
