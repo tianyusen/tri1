@@ -240,7 +240,10 @@ command_stream_t parse(char* buffer, int* line_number)
 	  {
 		  if (prev_newline == 1) 
 		  {
-			  buffer[i-1] = ';'; 
+			  buffer[i-1] = ';';
+			  (*line)--;
+			  i--;
+			  prev_newline = 0;
 			  last_space_to_colon = true; 
 			  goto colon; 
 		  }
@@ -418,6 +421,7 @@ command_stream_t parse(char* buffer, int* line_number)
         pares_EOF:
         i--;
       }
+
   }
 
   while(!is_empty_op(op_top))
