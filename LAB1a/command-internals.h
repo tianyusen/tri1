@@ -10,11 +10,11 @@ typedef enum
     SUBSHELL_COMMAND,    // ( A )
 } command_type;
 
-struct word_list{
-    char* word;
-    struct word_list* prev;
-    struct word_list* next;
-};
+// struct word_list{
+//     char* word;
+//     struct word_list* prev;
+//     struct word_list* next;
+// };
 
 // Data associated with a command.
 struct command
