@@ -245,7 +245,7 @@ command_stream_t parse(char* buffer, int* line_number)
 		  if (prev_newline == 1) 
 		  {
 			  buffer[i-1] = ';';
-			  (*line)--;
+			 // (*line)--;
 			  i--;
 			  prev_newline = 0;
 			  last_space_to_colon = true; 
@@ -448,7 +448,7 @@ seperate:
     if( op_cb ==  LPAR_OP ||    
         op_cb ==  RPAR_OP) 
         {
-          (*line)--;//EXPERIMENTAL to adjust this line numer to fit vvv
+          //(*line)--;//EXPERIMENTAL to adjust this line numer to fit vvv
 		  fprintf(stderr, "%d: Parsing Error, unpaired parenthesis by the EOF", *line); //TOCHECK line number should be the line of EOF 
         } 
     command_t second_conmmand = pop_command_stream(&top);
