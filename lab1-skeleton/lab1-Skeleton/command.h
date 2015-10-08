@@ -121,8 +121,10 @@ bool buffer_push(char* buffer, size_t* buffer_size_ptr, size_t* content_count, c
 
 //Small functions
 char* read_word(char* buffer, int *i);
+char* in_read_word(char* buffer, int *i);
+char* out_read_word(char* buffer, int *i);
 command_t build_command(command_type type, int* line);
-command_t pop_command_stream(command_stream_t stream);
+command_t pop_command_stream(command_stream_t* stream);
 void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command);
 
 void push_command_stream(command_stream_t* top, command_t current_command);

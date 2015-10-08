@@ -301,8 +301,9 @@ command_stream_t parse(char* buffer, int* line_number)
 				  {
 					  abort();//+perror("%d: Parsing Error, invalid input file name");
 				  }
-				  char* inword = read_word(buffer, &i);
+				  char* inword = in_read_word(buffer, &i);
 				  set_input(current_command, inword);//TODO
+				  goto inout;
 			  }
 			  if (buffer[i + 1] == '>')
 			  {
@@ -320,8 +321,9 @@ command_stream_t parse(char* buffer, int* line_number)
 				  {
 					  abort();//+perror("%d: Parsing Error, invalid output file name");
 				  }
-				  char* outword = read_word(buffer, &i);
+				  char* outword = out_read_word(buffer, &i);
 				  set_output(current_command, outword);//TODO
+				  goto inout;
 			  }
 			  break;
 		  case '\0': goto pares_EOF; //-EOF
@@ -349,8 +351,8 @@ command_stream_t parse(char* buffer, int* line_number)
 		  operator_type last_op = pop_operator(&op_top);
 		  while (last_op != LPAR_OP)
 		  {
-			  command_t second_conmmand = pop_command_stream(top);//TODO pop a command object off top, and return command_t, report error on line (line) if trying to pop empty steam
-			  command_t first_conmmand = pop_command_stream(top);
+			  command_t second_conmmand = pop_command_stream(&top);//TODO pop a command object off top, and return command_t, report error on line (line) if trying to pop empty steam
+			  command_t first_conmmand = pop_command_stream(&top);
 			  command_t command_cb = combine_command(&first_conmmand, &second_conmmand, last_op);
 			  // TODO generate a new command based on two command and a connecting op, line number take the first command's 
 			  push_command_stream(&top, command_cb);
@@ -362,7 +364,7 @@ command_stream_t parse(char* buffer, int* line_number)
 
 		  current_command = build_command(SUBSHELL_COMMAND, line);
 
-		  current_command->u.subshell_command = pop_command_stream(top);
+		  current_command->u.subshell_command = pop_command_stream(&top);
 		  //push_command_stream(top,current_command); this shall be done in the goto, which is at the last part of simple command ^^^
 		  i++;
 		  if (buffer[i] == '\0') { goto pares_EOF; } //-EOF
@@ -392,8 +394,8 @@ command_stream_t parse(char* buffer, int* line_number)
           while(top_operator(op_top) != LPAR_OP && precedence(top_operator(current_op)) <= precedence(top_operator(op_top)))
           {
             operator_type op_cb = pop_operator(&op_top);  //cb is short for combine
-            command_t second_conmmand = pop_command_stream(top);
-            command_t first_conmmand = pop_command_stream(top);
+            command_t second_conmmand = pop_command_stream(&top);
+            command_t first_conmmand = pop_command_stream(&top);
             command_t command_cb = combine_command(&first_conmmand, &second_conmmand, op_cb);
               // TODO generate a new command based on two command and a connecting op, line number take the first command's 
             push_command_stream(&top, command_cb);
@@ -412,6 +414,10 @@ command_stream_t parse(char* buffer, int* line_number)
 	  {
 		  while (buffer[i + 1] == '\n' || buffer[i + 1] == ' ')
 		  {
+			  if (buffer[i + 1] == '\n')
+			  {
+				  (*line)++;
+			  }
 			  i++;
 		  }
           last_space_to_colon = false;
@@ -441,8 +447,8 @@ seperate:
           (*line)--;//EXPERIMENTAL to adjust this line numer to fit vvv
 		  abort();//+perror("%d: Parsing Error, unpaired parenthesis by the EOF"); //TOCHECK line number should be the line of EOF 
         } 
-    command_t second_conmmand = pop_command_stream(top);
-    command_t first_conmmand = pop_command_stream(top);
+    command_t second_conmmand = pop_command_stream(&top);
+    command_t first_conmmand = pop_command_stream(&top);
     command_t command_cb = combine_command(&first_conmmand, &second_conmmand, op_cb);
       // TODO generate a new command based on two command and a connecting op, line number take the first command's 
     push_command_stream(&top, command_cb);
@@ -528,11 +534,6 @@ char* read_word(char* buffer, int *i){
 
 	new_word[count] = '\0';
 
-    //
-	//if (c == ' ') {
-    //    *i = *i+1;
-    //}
-    
     return new_word;
 }
 
@@ -563,11 +564,15 @@ command_t build_command(command_type type, int* line){
     
 }
 
-command_t pop_command_stream(command_stream_t stream){
-	command_stream_t temp = stream;
-	command_t result = stream->m_command;
-	stream = stream->prev;
-	stream->next = NULL;
+command_t pop_command_stream(command_stream_t* stream){
+	command_stream_t temp = *stream;
+	command_t result = (*stream)->m_command;
+	*stream = (*stream)->prev;
+	if(stream != NULL)
+	{
+		(*stream)->next = NULL;
+	}
+
 	free(temp);
     return result;
 }
@@ -613,6 +618,10 @@ void push_command_stream(command_stream_t* top, command_t current_command){
 	if (new_stream->prev != NULL)
 	{
 		new_stream->prev->next = new_stream;
+	}
+	else
+	{
+		new_stream->prev = NULL;
 	}
     
     *top = new_stream;
@@ -763,3 +772,63 @@ void free_op(operator_node_t op_top)
 	}
 }
 
+char* in_read_word(char* buffer, int *i)
+{
+	size_t buffer_size = 2048;
+	char* new_word = checked_malloc(buffer_size);
+	char c = buffer[*i];
+	size_t count = 0;
+
+	while ((is_word(c)) && (c != ' ')) {
+		if (count + 1 == buffer_size)
+		{
+			buffer_size = buffer_size * 2;
+			new_word = checked_grow_alloc(buffer, &buffer_size);
+		}
+		new_word[count] = c;
+		*i = *i + 1;
+		count++;
+		c = buffer[*i];
+
+	}
+	if (c == '<')
+	{
+		abort();
+	}
+	if ((c != '>') && (c != '\n') && (c != ' '))
+	{
+		*i = *i - 1;
+	}
+
+	new_word[count] = '\0';
+
+	return new_word;
+}
+char* out_read_word(char* buffer, int *i)
+{
+	size_t buffer_size = 2048;
+	char* new_word = checked_malloc(buffer_size);
+	char c = buffer[*i];
+	size_t count = 0;
+
+	while ((is_word(c)) && (c != ' ')) {
+		if (count + 1 == buffer_size)
+		{
+			buffer_size = buffer_size * 2;
+			new_word = checked_grow_alloc(buffer, &buffer_size);
+		}
+		new_word[count] = c;
+		*i = *i + 1;
+		count++;
+		c = buffer[*i];
+
+	}
+	if ((c != '>') && (c != '<') && (c != '\n') && (c != ' '))
+	{
+		*i = *i - 1;
+	}
+
+	new_word[count] = '\0';
+
+	return new_word;
+}
