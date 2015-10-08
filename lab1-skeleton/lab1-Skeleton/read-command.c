@@ -247,6 +247,7 @@ command_stream_t parse(char* buffer, int* line_number)
 			  last_space_to_colon = true; 
 			  goto colon; 
 		  }
+		  prev_newline = 0;
 		  int count_word = 0;
 		  size_t buffer_size = 2 * sizeof(char*);
 
@@ -317,6 +318,7 @@ command_stream_t parse(char* buffer, int* line_number)
 				  char* outword = read_word(buffer, &i);
 				  set_output(current_command, outword);//TODO
 			  }
+			  break;
 		  case '\0': goto pares_EOF; //-EOF
 		  }
 		  push_command_stream(&top, current_command);//TODO(y) move top to pointing to current_command, and link up the last command
@@ -568,25 +570,26 @@ void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t cur
     }
     else
     {
-        if (((*num_word)*(sizeof(char*))+1) >= INT_MAX)
+        if (((*num_word+1)*(sizeof(char*))+1) >= INT_MAX)
         {
             abort();//+perror("Buffer size overflow");
             abort();
         }
-        if (((*num_word)*(sizeof(char*))+1) >= *buffer_size) {
-            if ((*num_word*(sizeof(char*))+1) >= INT_MAX/2) {
+        if (((*num_word+1)*(sizeof(char*))+1) >= *buffer_size) {
+            if (((*num_word+1)*(sizeof(char*))+1) >= INT_MAX/2) {
                 abort();//+perror("Buffer size overflow");
                 abort();
             }
             *buffer_size = *buffer_size * 2;
-            *current_command->u.word = checked_grow_alloc(current_command->u.word,buffer_size);
+            current_command->u.word = checked_grow_alloc(current_command->u.word,buffer_size);
         }
     }
     
     //char* copy = checked_malloc(strlen(new_word)+1);
     //strcpy(copy,new_word);
     
-    current_command->u.word[*num_word]= new_word;
+    (current_command->u.word)[*num_word]= new_word;
+	(current_command->u.word)[*num_word+1] = NULL;
     *num_word = *num_word+1;
     
     //free(new_word);
