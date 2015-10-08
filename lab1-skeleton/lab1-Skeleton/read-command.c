@@ -57,16 +57,19 @@ make_command_stream (int (*getbyte) (void *), void *arg)
 command_t 
 read_command_stream(command_stream_t* stream)
 {
+	
 	if ((*stream) == NULL)
 	{
 		return NULL;
 	}
-	command_stream_t head = (*stream)->next;
+	command_stream_t tail = (*stream)->next;
 	command_t result = (*stream)->m_command;
-	*stream = head;
+	free(*stream);
+	*stream = tail;
 	return result;
 
 }
+
 
 
 //Addition:
@@ -487,7 +490,14 @@ seperate:
   Remove the last character (a space) from the string  */
 
   free_op(op_top);
-  return top;
+  command_stream_t tail = top;
+  while (tail != NULL && tail->prev !=NULL )
+  {
+	  tail = tail->prev;
+  }
+
+  return tail;
+
 }
 
 
