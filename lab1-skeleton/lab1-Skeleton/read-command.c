@@ -202,7 +202,7 @@ command_stream_t parse(char* buffer, int* line_number)
   operator_node_t op_top = NULL;
   command_t current_command = NULL;
   bool last_space_to_colon = false;
-
+  bool finished = false;
   int i;
   for (i = 0; buffer[i] != '\0'; i++)//-EOF//each loop is a newline
   {
@@ -246,6 +246,11 @@ command_stream_t parse(char* buffer, int* line_number)
 			  prev_newline = 0;
 			  last_space_to_colon = true; 
 			  goto colon; 
+		  }
+		  if (prev_newline == 2)
+		  {
+			  goto seperate;
+			  sep_back:;
 		  }
 		  prev_newline = 0;
 		  int count_word = 0;
@@ -423,8 +428,9 @@ command_stream_t parse(char* buffer, int* line_number)
         pares_EOF:
         i--;
       }
-
   }
+  finished = true;
+seperate:
 
   while(!is_empty_op(op_top))
   {
@@ -442,6 +448,10 @@ command_stream_t parse(char* buffer, int* line_number)
     push_command_stream(&top, command_cb);
   }
 
+  if (!finished)
+  {
+	  goto sep_back;
+  }
 
 /*  For each item in the infix (with parens) expression
     If the item is a number then add it to the string with a space
@@ -511,6 +521,10 @@ char* read_word(char* buffer, int *i){
         c = buffer[*i];
         
     }
+	if ((c != '>') && (c != '<') && (c != '\n') && (c != ' '))
+	{
+		*i = *i - 1;
+	}
 
 	new_word[count] = '\0';
 
@@ -550,17 +564,12 @@ command_t build_command(command_type type, int* line){
 }
 
 command_t pop_command_stream(command_stream_t stream){
-    if (stream->prev != NULL) {
-        stream->prev->next = stream->next;
-	stream->prev = NULL;
-    }
-    
-    if (stream->next != NULL) {
-        stream->next->prev = stream->prev;
+	command_stream_t temp = stream;
+	command_t result = stream->m_command;
+	stream = stream->prev;
 	stream->next = NULL;
-    }
-    
-    return stream->m_command;
+	free(temp);
+    return result;
 }
 
 void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t current_command){
