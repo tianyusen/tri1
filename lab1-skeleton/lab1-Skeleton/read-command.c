@@ -186,14 +186,9 @@ bool buffer_push(char* buffer, size_t* buffer_size, size_t* content_count, char 
   return false;
 }
 
-bool is_word(char c)
+bool is_word (char c)
 {
-	if (c == '\0')
-	{
-		return false;
-	}
-
-  if (isalnum(c) || strchr("!%+,-./:@^_", c) != NULL )
+  if (isalnum(c) || strchr("!%+,-./:@^_", c) != NULL)
     return true;
   return false;
 }
@@ -834,11 +829,7 @@ char* out_read_word(char* buffer, int *i)
 		c = buffer[*i];
 
 	}
-	if (c == '>')
-	{
-		abort();
-	}
-	if ((c != '<') && (c != '\n') && (c != ' '))
+	if ((c != '>') && (c != '<') && (c != '\n') && (c != ' '))
 	{
 		*i = *i - 1;
 	}
