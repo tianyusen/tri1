@@ -3,7 +3,7 @@
 #include "command.h"
 //#include "command-internals.h"
 #include "alloc.h"
-//#include <error.h>
+#include <error.h>
 
 
 /* Create a command stream from LABEL, GETBYTE, and ARG.  A reader of
@@ -59,7 +59,7 @@ read_command_stream(command_stream_t* stream)
 {
 	if ((*stream) == NULL)
 	{
-		return false;
+		return NULL;
 	}
 	command_stream_t head = (*stream)->next;
 	command_t result = (*stream)->m_command;
@@ -169,8 +169,7 @@ bool buffer_push(char* buffer, size_t* buffer_size, size_t* content_count, char 
   {
     if(*buffer_size > INT_MAX/2)
     {
-        //+perror("Buffer size overflow");
-        abort();
+		fprintf(stderr, "Buffer size overflow");
         return true;
     }
     *buffer_size = *buffer_size * 2;
@@ -221,7 +220,7 @@ command_stream_t parse(char* buffer, int* line_number)
 		  (*line)++;
 		  if (i > 0 && (buffer[i - 1] == '<' || buffer[i - 1] == '>'))
 		  {
-			  abort();//+perror("%d: Parsing Error, in violation of (Newlines may follow any special token other than < and >)");
+			  fprintf(stderr, "%d: Parsing Error, in violation of (Newlines may follow any special token other than < and >)", *line);
 		  }
 		  switch (prev_newline)
 		  {
@@ -304,7 +303,7 @@ command_stream_t parse(char* buffer, int* line_number)
 				  }
 				  else
 				  {
-					  abort();//+perror("%d: Parsing Error, invalid input file name");
+					  fprintf(stderr, "%d: Parsing Error, invalid input file name", *line);
 				  }
 				  char* inword = in_read_word(buffer, &i);
 				  set_input(current_command, inword);//TODO
@@ -324,7 +323,7 @@ command_stream_t parse(char* buffer, int* line_number)
 				  } //move to the start of next word
 				  else// no word detected, either after a white space or immediately after '>' 
 				  {
-					  abort();//+perror("%d: Parsing Error, invalid output file name");
+					  fprintf(stderr, "%d: Parsing Error, invalid output file name", *line);
 				  }
 				  char* outword = out_read_word(buffer, &i);
 				  set_output(current_command, outword);//TODO
@@ -351,7 +350,7 @@ command_stream_t parse(char* buffer, int* line_number)
 	  else if (buffer[i] == ')')
 	  {
 		  if (is_empty_op(op_top)) {
-			  abort();//+perror("%d: Parsing Error, unparied right parenthesis");
+			  fprintf(stderr, "%d: Parsing Error, unparied right parenthesis", *line);
 		  }
 		  operator_type last_op = pop_operator(&op_top);
 		  while (last_op != LPAR_OP)
@@ -363,7 +362,7 @@ command_stream_t parse(char* buffer, int* line_number)
 			  push_command_stream(&top, command_cb);
 			  last_op = pop_operator(&op_top);
 			  if (is_empty_op(op_top)) {
-				  abort();//+perror("%d: Parsing Error, unparied right parenthesis");
+				  fprintf(stderr, "%d: Parsing Error, unparied right parenthesis", *line);
 			  }
 		  }
 
@@ -378,7 +377,7 @@ command_stream_t parse(char* buffer, int* line_number)
 
     else if(prev_newline > 0)
     {
-		abort();//+perror("%d: Parsing Error, in violation of (the only tokens that newlines can appear before are (, ), and the ﬁrst words of simple commands)");
+		fprintf(stderr,  "%d: Parsing Error, in violation of (the only tokens that newlines can appear before are (, ), and the ﬁrst words of simple commands)", *line);
     }
     else if(is_op(buffer,i))//TODO, evaluate buffer[i] first to avoid buffer[i+1] cause segmentation fault
     {//prev_newline == 0, and this one is not a word, a (, or a ), then this must be a operator other than ( and ).
@@ -431,7 +430,7 @@ command_stream_t parse(char* buffer, int* line_number)
     }
     else// not a legit character
     {
-      abort();//+perror("%d: Parsing Error, non-standard character.");
+		fprintf(stderr, "%d: Parsing Error, non-standard character.", *line);
     }
     //prev_newline = 0;
     if(false)//EMERGENCY EXIT buffer[i] == EOF
@@ -450,7 +449,7 @@ seperate:
         op_cb ==  RPAR_OP) 
         {
           (*line)--;//EXPERIMENTAL to adjust this line numer to fit vvv
-		  abort();//+perror("%d: Parsing Error, unpaired parenthesis by the EOF"); //TOCHECK line number should be the line of EOF 
+		  fprintf(stderr, "%d: Parsing Error, unpaired parenthesis by the EOF", *line); //TOCHECK line number should be the line of EOF 
         } 
     command_t second_conmmand = pop_command_stream(&top);
     command_t first_conmmand = pop_command_stream(&top);
@@ -591,13 +590,11 @@ void push_word(char* new_word, int* num_word, size_t* buffer_size, command_t cur
     {
         if (((*num_word+1)*(sizeof(char*))+1) >= INT_MAX)
         {
-            abort();//+perror("Buffer size overflow");
-            abort();
+			fprintf(stderr, "Buffer size overflow");
         }
         if (((*num_word+1)*(sizeof(char*))+1) >= *buffer_size) {
             if (((*num_word+1)*(sizeof(char*))+1) >= INT_MAX/2) {
-                abort();//+perror("Buffer size overflow");
-                abort();
+				fprintf(stderr, "Buffer size overflow");
             }
             *buffer_size = *buffer_size * 2;
             current_command->u.word = checked_grow_alloc(current_command->u.word,buffer_size);
@@ -739,8 +736,7 @@ operator_node_t build_operator(char* buffer, int* i)
 {
 	if (!is_op(buffer, *i))
 	{
-		abort();//+perror( "Logic Error 114" );
-		abort();
+		fprintf(stderr, "%d: Logic Error 114" );
 	}
 	size_t size = sizeof(struct operator_node);
 	operator_node_t new_op = (operator_node_t)checked_malloc(size);
