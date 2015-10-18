@@ -11,8 +11,7 @@
 int
 command_status (command_t c)
 {
-  c;
-  return -1;
+  return c->status;
 }
 
 void
