@@ -5,3 +5,14 @@ Mentions any special features or limitations.
 
 Yusen Tian: 304302243
 Tian Ye: 504270284
+
+
+#0
+In read-command.c some functions designed to free elements, atoms, and commands are not actually used, just in case we need them
+in the future part of the project or design projects.
+
+#1
+In executing command, we made sure the seqence commands are run in sequence by forcing it to fork a child to do
+left part first and have the parent waiting. Next the parents knows his child is finished, it will start excution of the 
+right part of the sequence command.
+

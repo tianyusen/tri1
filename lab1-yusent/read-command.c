@@ -498,7 +498,7 @@ command_t plant (element* head_atom)
 
 char* load_buffer(size_t* content, int (*getbyte) (void *), void *arg)
 {
-   *content = 0;
+  *content = 0;
    size_t buffer_size = 1000;
    char* buffer = checked_malloc(buffer_size);
    char c = 0;
@@ -507,11 +507,14 @@ char* load_buffer(size_t* content, int (*getbyte) (void *), void *arg)
    {
       if (c == '#') //comments
       {
-         while ( c != EOF && c != '\n')
+         for (c = getbyte(arg); c != EOF && c != '\n';)
          {
             c = getbyte(arg);
          } 
-         continue;
+         if(c == EOF)
+         {
+         	break;
+         }
       }
      // load into buffer
      buffer[*content] = c;

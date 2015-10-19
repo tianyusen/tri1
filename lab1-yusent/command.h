@@ -11,6 +11,10 @@
 #include <stdlib.h>   // to free memory
 #include <string.h>
 #include "command-internals.h"
+#include <fcntl.h>//o_rdwr
+#include <sys/types.h>//for fork
+#include <sys/wait.h>//for fork
+#include <unistd.h>
 typedef struct command *command_t;
 typedef struct command command;
 typedef struct command_stream *command_stream_t;

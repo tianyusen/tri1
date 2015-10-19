@@ -3,7 +3,7 @@
 #include "command.h"
 //#include "command-internals.h"
 
-#include <error.h>
+
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -38,17 +38,17 @@ execute_command (command_t c, int time_travel)
             if(fd == -1){
               goto exe_inout_error;
             }
-            if(dup2(fd, STD_IN)==-1){
+            if(dup2(fd, 0)==-1){ // 0 = std_in
               goto exe_dup_error;
             }
             close(fd);
           }
           if(c->output != NULL){
-            int fd = open(c->output, O_RDWR);
+            int fd = open(c->output, O_RDWR|O_CREAT|O_TRUNC, 0666);
             if(fd == -1){
               goto exe_inout_error;
             }
-            if(dup2(fd, STD_OUT)==-1){
+            if(dup2(fd, 1)==-1){// 1 = std_out
               goto exe_dup_error;
             }
             close(fd);
@@ -59,7 +59,7 @@ execute_command (command_t c, int time_travel)
         }
         else{
           int status=0;
-          waitpid(childpid, &stauts,0);
+          waitpid(childpid, &status,0);
           c->status = status;
         }
      }
@@ -90,7 +90,7 @@ execute_command (command_t c, int time_travel)
         execute_command(c->u.command[0], time_travel);
         c->status = c->u.command[0]->status;
         close(pipefd[1]);
-        exit(c->command[0]->status); // for parent waitpid
+        exit(c->u.command[0]->status); // for parent waitpid
       }
       else{
         int status=0;
@@ -105,7 +105,7 @@ execute_command (command_t c, int time_travel)
         //if(status == ERROR){ report error}; else ...
         c->status = c->u.command[1]->status;
         close(pipefd[0]);
-        //exit(c->command[1]->status);
+        //exit(c->u.command[1]->status);
       }
 
      }
@@ -125,7 +125,7 @@ execute_command (command_t c, int time_travel)
       error(7, 0, "Execution Error, invalid type of command");
      }
 
-     if(false)
+     if(0)
      {
         exe_error:;
           error(7, 0, "Execution Error, single command failure");
@@ -137,6 +137,6 @@ execute_command (command_t c, int time_travel)
           error(7, 0, "Execution Error, inout file open error");
           return;
      }
-     
+
      return;
 }
