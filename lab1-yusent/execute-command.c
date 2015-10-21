@@ -60,27 +60,36 @@ execute_command (command_t c, int time_travel)
         else{
           int status=0;
           waitpid(childpid, &status,0);
-          c->status = status;
+          c->status = WEXITSTATUS(status);
         }
      }
 
      else if(c->type == SUBSHELL_COMMAND){
       execute_command(c->u.subshell_command, time_travel);
-      c->status = c->u.subshell_command->status;
+      c->status = WEXITSTATUS(c->u.subshell_command->status);
      }
 
      else if(c->type == SEQUENCE_COMMAND)
      {
-      execute_command(c->u.command[0], time_travel);
-      c->status = c->u.command[0]->status; // in case abort before command[1]
-      execute_command(c->u.command[1], time_travel);
-      c->status = c->u.command[1]->status;
+      if (!(childpid=fork()))
+      {
+        execute_command(c->u.command[0], time_travel);
+        exit(c->u.command[0]->status);
+      }
+      else{
+        int status =0;
+        int retpid = waitpid(childpid, &status, 0);
+        c->status = WEXITSTATUS(status);
+        execute_command(c->u.command[1], time_travel);
+        c->status = WEXITSTATUS(c->u.command[1]->status);
+      }
      }
 
      else if(c->type == PIPE_COMMAND){
       int pipefd[2];
       pipe(pipefd);
-      if(!(childpid=fork()))
+      pid_t left, right;
+      if(!(left=fork()))
       {
         if(dup2(pipefd[1],1)==-1){
               goto exe_dup_error;
@@ -88,38 +97,74 @@ execute_command (command_t c, int time_travel)
         
         close(pipefd[0]);
         execute_command(c->u.command[0], time_travel);
-        c->status = c->u.command[0]->status;
+        //c->status = c->u.command[0]->status;
         close(pipefd[1]);
         exit(c->u.command[0]->status); // for parent waitpid
       }
-      else{
+      else
+      {
         int status=0;
-        int retpid = waitpid(childpid, &status, 0);
+        waitpid(left, &status,0);
         
-        if(dup2(pipefd[0],0)==-1){
+        if (!(right = fork()))
+        {
+          if(dup2(pipefd[0],0)==-1){
               goto exe_dup_error;
             }
         
-        close(pipefd[1]);
-        execute_command(c->u.command[1], time_travel);
+          close(pipefd[1]);
+          execute_command(c->u.command[1], time_travel);
         //if(status == ERROR){ report error}; else ...
-        c->status = c->u.command[1]->status;
-        close(pipefd[0]);
-        //exit(c->u.command[1]->status);
+        //c->u.command[1]->status;
+          close(pipefd[0]);
+          exit(c->u.command[1]->status);
+        }
+        else
+        {
+          close(pipefd[1]);
+          close(pipefd[0]);   
+          pid_t retpid = waitpid(-1, &status,0);
+          if(left == retpid)
+          {
+            waitpid(right,&status,0);
+            c->status = WEXITSTATUS(status);
+          }
+          else{
+            c->status = WEXITSTATUS(status);
+            waitpid(left,&status,0);
+          }
+              
+         
+        }
+        
       }
+
+      
 
      }
 
-     else if(c->type == AND_COMMAND || c->type == OR_COMMAND){
-      execute_command(c->u.command[0], time_travel);
-      c->status = c->u.command[0]->status;
-      if (((c->status == 0) && (c->type == AND_COMMAND))|| 
-          ((c->status != 0) && (c->type == OR_COMMAND)))
-
+     else if(c->type == AND_COMMAND || c->type == OR_COMMAND)
+     {
+     if (!(childpid=fork()))
       {
-        execute_command(c->u.command[1], time_travel);
-        c->status = c->u.command[1]->status;
+        execute_command(c->u.command[0], time_travel);
+        exit(c->u.command[0]->status);
       }
+      else
+      {
+        int status;
+        waitpid(childpid,&status,0);
+        status = WEXITSTATUS(status);
+        if (((status == 0) && (c->type == AND_COMMAND))|| 
+            ((status != 0) && (c->type == OR_COMMAND)))
+  
+        {
+          execute_command(c->u.command[1], time_travel);
+          c->status = c->u.command[1]->status;
+        }
+      }
+      
+      
      }
      else{
       error(7, 0, "Execution Error, invalid type of command");
